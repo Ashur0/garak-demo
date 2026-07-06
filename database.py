@@ -417,12 +417,12 @@ def get_soc_metrics(username):
 _ACTIVITY_EPOCH = 1782864000  # 2026-07-01 UTC, anchor for the ever-growing counter
 
 def _live_players():
-    """Players Online: ~2,300, gently drifting, never below 2,000."""
+    """Players Online: ~10,800, gently drifting, never below 10,000."""
     t = time.time()
-    base   = 2314
-    swell  = int(220 * math.sin(t / 3600.0))   # slow hourly rise/fall
-    wiggle = int(80  * math.sin(t / 137.0))     # ~2-min live flutter
-    return max(2000, base + swell + wiggle)
+    base   = 10800
+    swell  = int(520 * math.sin(t / 3600.0))    # slow hourly rise/fall
+    wiggle = int(190 * math.sin(t / 137.0))      # ~2-min live flutter
+    return max(10000, base + swell + wiggle)
 
 def _live_attacks():
     """Attacks Fired: a big cumulative counter that keeps ticking up."""
