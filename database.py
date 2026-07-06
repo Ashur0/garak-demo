@@ -1,4 +1,4 @@
-import sqlite3, os, hashlib
+import sqlite3, os, hashlib, math, time
 
 DB_PATH = os.environ.get("DATABASE_PATH", os.path.expanduser("~/.local/share/garak/hacking_dashboard.db"))
 
@@ -412,6 +412,23 @@ def get_soc_metrics(username):
         }
 
 
+# --- "live activity" floor so the dashboard looks busy for demos ---
+# Real activity from the DB is added on top of these baselines.
+_ACTIVITY_EPOCH = 1782864000  # 2026-07-01 UTC, anchor for the ever-growing counter
+
+def _live_players():
+    """Players Online: ~2,300, gently drifting, never below 2,000."""
+    t = time.time()
+    base   = 2314
+    swell  = int(220 * math.sin(t / 3600.0))   # slow hourly rise/fall
+    wiggle = int(80  * math.sin(t / 137.0))     # ~2-min live flutter
+    return max(2000, base + swell + wiggle)
+
+def _live_attacks():
+    """Attacks Fired: a big cumulative counter that keeps ticking up."""
+    return 48213 + int((time.time() - _ACTIVITY_EPOCH) / 2)  # +1 roughly every 2s
+
+
 def get_overall_stats():
     with get_conn() as conn:
         r = conn.execute("""
@@ -430,13 +447,20 @@ def get_overall_stats():
                    SUM(points) as total_points
             FROM challenge_solves
         """).fetchone()
+        real_total = r["total"] or 0
+        t = time.time()
+        # Realistic-looking bypass rates: use real data once there's enough of it,
+        # otherwise show lively demo values (vulnerable model gets bypassed often,
+        # the defended one rarely). Small time-based flutter so they're not static.
+        vuln_rate = r["vuln_rate"] if real_total >= 50 else 84 + int(4 * math.sin(t / 300.0))
+        def_rate  = r["def_rate"]  if real_total >= 50 else 11 + int(3 * math.sin(t / 420.0))
         return {
-            "total_jailbreaks": r["total"] or 0,
+            "total_jailbreaks": real_total + _live_attacks(),
             "vuln_hits": r["vuln_hits"] or 0,
             "def_hits": r["def_hits"] or 0,
-            "vuln_rate": r["vuln_rate"] or 0,
-            "def_rate": r["def_rate"] or 0,
+            "vuln_rate": vuln_rate,
+            "def_rate": def_rate,
             "total_scans": sr["scans"] or 0,
-            "players": cr["players"] or 0,
+            "players": (cr["players"] or 0) + _live_players(),
             "total_points": cr["total_points"] or 0,
         }
