@@ -21778,6 +21778,19 @@ function rrInit(){rrScore();rrList();rrShow(RR_ACTIVE);}
   80%{transform:translate(3px,0);filter:none}
   100%{transform:translate(0,0);filter:none}
 }
+/* stomp — camera shake of the whole viewport when the boss lands */
+html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
+@keyframes vilQuake{
+  0%,100%{transform:translate(0,0)}
+  10%{transform:translate(-7px,5px)}20%{transform:translate(8px,-6px)}
+  30%{transform:translate(-9px,4px)}40%{transform:translate(7px,6px)}
+  50%{transform:translate(-6px,-5px)}60%{transform:translate(8px,3px)}
+  70%{transform:translate(-5px,5px)}80%{transform:translate(5px,-4px)}90%{transform:translate(-3px,2px)}
+}
+#vil-quakeflash{position:fixed;inset:0;z-index:2499997;pointer-events:none;opacity:0;
+  background:radial-gradient(ellipse at 78% 82%,rgba(255,40,60,.28),transparent 55%)}
+#vil-quakeflash.hit{animation:vilQuakeFlash .5s ease-out}
+@keyframes vilQuakeFlash{0%{opacity:.9}100%{opacity:0}}
 #villain-overlay.show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
 #villain-overlay.leaving{opacity:0;transform:translateY(30px) scale(.92)}
 .vil-bubble{position:relative;margin:0 4px 10px;background:linear-gradient(160deg,#1a0308,#2a0410);border:1px solid #ff2a44;
@@ -21821,6 +21834,7 @@ function rrInit(){rrScore();rrList();rrShow(RR_ACTIVE);}
 </style>
 
 <div id="vil-backdrop"></div>
+<div id="vil-quakeflash"></div>
 <div id="villain-overlay" aria-hidden="true">
   <div class="vil-bubble">
     <span class="vil-name">&#9760; OVERLORD-9 // ROGUE AI</span>
@@ -21982,6 +21996,28 @@ function rrInit(){rrScore();rrList();rrShow(RR_ACTIVE);}
     _helmet=null;
   }
 
+  // Heavy stomp: sub-bass boom + viewport camera-shake + impact flash.
+  function stomp(){
+    var c=ac();
+    if(c&&!muted){try{
+      var t=c.currentTime;
+      var o=c.createOscillator(),g=c.createGain();
+      o.type='sine'; o.frequency.setValueAtTime(95,t); o.frequency.exponentialRampToValueAtTime(28,t+0.35);
+      g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.7,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+0.5);
+      o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+0.52);
+      var buf=c.createBuffer(1,c.sampleRate*0.18,c.sampleRate),d=buf.getChannelData(0);
+      for(var i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3);
+      var ns=c.createBufferSource(); ns.buffer=buf;
+      var lp=c.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=260;
+      var ng=c.createGain(); ng.gain.value=0.5; ns.connect(lp); lp.connect(ng); ng.connect(c.destination); ns.start(t);
+    }catch(e){}}
+    var root=document.documentElement;
+    root.classList.remove('vil-quake'); void root.offsetWidth; root.classList.add('vil-quake');
+    setTimeout(function(){root.classList.remove('vil-quake');},520);
+    var fl=document.getElementById('vil-quakeflash');
+    if(fl){fl.classList.remove('hit'); void fl.offsetWidth; fl.classList.add('hit');}
+  }
+
   function pickVoice(){
     try{
       var vs=window.speechSynthesis?window.speechSynthesis.getVoices():[];
@@ -21994,7 +22030,8 @@ function rrInit(){rrScore();rrList();rrShow(RR_ACTIVE);}
   }
   if(window.speechSynthesis){try{window.speechSynthesis.onvoiceschanged=function(){voice=pickVoice();};}catch(e){}}
 
-  function speak(text){
+  // Fallback: browser TTS + live helmet bed (used only if the baked clip fails).
+  function speakTTS(text){
     if(muted||!window.speechSynthesis||!window.SpeechSynthesisUtterance)return;
     try{
       window.speechSynthesis.cancel();
@@ -22008,6 +22045,26 @@ function rrInit(){rrScore();rrList();rrShow(RR_ACTIVE);}
       u.onerror=function(){helmetStop();};
       window.speechSynthesis.speak(u);
     }catch(e){}
+  }
+
+  // Primary: play the pre-baked, browser-independent Kylo-helmet clip.
+  var curAudio=null;
+  function speak(text,mood,idx){
+    if(muted)return;
+    try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}
+    if(curAudio){try{curAudio.pause();}catch(e){}curAudio=null;}
+    var bot=document.getElementById('vil-bot');
+    if(mood&&idx!=null){
+      var a=new Audio('/static/villain/'+mood+'_'+idx+'.wav');
+      a.volume=1; curAudio=a;
+      a.onplay=function(){if(bot)bot.classList.add('speaking');};
+      a.onended=function(){if(bot)bot.classList.remove('speaking');};
+      a.onerror=function(){if(bot)bot.classList.remove('speaking');speakTTS(text);};
+      var p=a.play();
+      if(p&&p.catch)p.catch(function(){speakTTS(text);});   // autoplay blocked -> TTS
+    }else{
+      speakTTS(text);
+    }
   }
 
   function typeOut(text){
@@ -22027,7 +22084,9 @@ function rrInit(){rrScore();rrList();rrShow(RR_ACTIVE);}
     if(localStorage.getItem('villainOff')==='1')return;
     var mood=opts.mood||(opts.intro?'intro':'wrong');
     var pool= mood==='intro'?INTRO : mood==='right'?PRAISE : TAUNTS;
-    var line=customText||pool[Math.floor(Math.random()*pool.length)];
+    var idx=Math.floor(Math.random()*pool.length);
+    var line=customText||pool[idx];
+    var clipIdx=customText?null:idx;                       // baked clips exist per pool line
     var bd=document.getElementById('vil-backdrop');
 
     ov.classList.remove('leaving');
@@ -22040,8 +22099,9 @@ function rrInit(){rrScore();rrList();rrShow(RR_ACTIVE);}
     clearTimeout(glitchTimer); glitchTimer=setTimeout(function(){ov.classList.remove('glitch');},1100);
 
     entrySfx();
+    setTimeout(stomp,230);                                  // he lands -> screen shakes
     typeOut(line);
-    setTimeout(function(){speak(line);},520);
+    setTimeout(function(){speak(line,mood,clipIdx);},520);
     clearTimeout(hideTimer);
     hideTimer=setTimeout(dismissVillain, Math.max(6800, line.length*100));
     lastAt=Date.now();
@@ -22052,6 +22112,7 @@ function rrInit(){rrScore();rrList();rrShow(RR_ACTIVE);}
     var bd=document.getElementById('vil-backdrop');
     clearTimeout(hideTimer);
     try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}
+    if(curAudio){try{curAudio.pause();}catch(e){}curAudio=null;}
     helmetStop();
     ov.classList.add('leaving'); ov.classList.remove('show','glitch');
     if(bd)bd.classList.remove('show');
@@ -22062,7 +22123,7 @@ function rrInit(){rrScore();rrList();rrShow(RR_ACTIVE);}
     muted=!muted;
     var b=document.getElementById('vil-mute');
     if(b)b.innerHTML=muted?'🔇 MUTED':'🔈 VOICE';
-    if(muted){try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}helmetStop();}
+    if(muted){try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}if(curAudio){try{curAudio.pause();}catch(e){}curAudio=null;}helmetStop();}
   };
 
   // Universal answer detector — pops the boss on wrong answers (taunt) and,
