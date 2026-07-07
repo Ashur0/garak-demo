@@ -12436,15 +12436,24 @@ function endBoot(){
 })();
 
 // ── WELCOME MODAL ────────────────────────────────────────────────────────────
+// The robot boss only greets you once EVERY onboarding/login screen is finished.
+var _villainGreeted=false;
+function _villainGreet(){
+  if(_villainGreeted)return; _villainGreeted=true;
+  setTimeout(function(){try{if(window.summonVillain)window.summonVillain(null,{intro:true});}catch(e){}},900);
+}
 function checkWelcome(){
   if(!localStorage.getItem('ahl_visited')){
-    document.getElementById('welcome-modal').style.display='flex';
+    document.getElementById('welcome-modal').style.display='flex';   // first visit: greet after they close it
+  } else {
+    _villainGreet();                                                 // returning visitor: no modal, greet now
   }
 }
 function closeWelcome(e){
   if(e&&e.target!==document.getElementById('welcome-modal')&&e.type==='click')return;
   document.getElementById('welcome-modal').style.display='none';
   localStorage.setItem('ahl_visited','1');
+  _villainGreet();
 }
 
 // ── TUTORIAL BANNERS ──────────────────────────────────────────────────────────
@@ -15046,8 +15055,8 @@ function stopLoginMatrix(){
 function dismissLogin(){
   const overlay=document.getElementById('atk-login-overlay');
   if(overlay){overlay.style.transition='opacity .6s';overlay.style.opacity='0';setTimeout(()=>{overlay.style.display='none';stopLoginMatrix();},600);}
-  // Boss enters once you clear the gate.
-  setTimeout(function(){try{if(window.summonVillain)window.summonVillain(null,{intro:true});}catch(e){}},1100);
+  // NOTE: the robot no longer enters here — it waits until ALL onboarding
+  // screens (boot, legal/biometric, welcome) are done. See _villainGreet().
 }
 window.doLogin=function(){
   const btn=document.getElementById('login-auth-btn');
@@ -22136,22 +22145,16 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
   }
 
   // Primary: play the pre-baked, browser-independent Kylo-helmet clip.
-  var curAudio=null;
+  // ── VOICE REMOVED — starting fresh; awaiting a real Kylo Ren voice source. ──
+  // Visual-only for now: jaw, eye-flare and the red/black screen flash still run,
+  // just silent. Re-enable by restoring clip playback here once real audio exists.
+  var curAudio=null, _talkT=null;
   function speak(text,mood,idx){
     if(muted)return;
-    try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}
-    if(curAudio){try{curAudio.pause();}catch(e){}curAudio=null;}
-    if(mood&&idx!=null){
-      var a=new Audio('/static/villain/'+mood+'_'+idx+'.wav');
-      a.volume=1; curAudio=a;
-      a.onplay=function(){setTalking(true);};
-      a.onended=function(){setTalking(false);};
-      a.onerror=function(){setTalking(false);speakTTS(text);};
-      var p=a.play();
-      if(p&&p.catch)p.catch(function(){speakTTS(text);});   // autoplay blocked -> TTS
-    }else{
-      speakTTS(text);
-    }
+    setTalking(true);
+    clearTimeout(_talkT);
+    var dur=Math.min(8000, Math.max(2600, (text?text.length:30)*85));
+    _talkT=setTimeout(function(){setTalking(false);}, dur);
   }
 
   function typeOut(text){
