@@ -15046,6 +15046,8 @@ function stopLoginMatrix(){
 function dismissLogin(){
   const overlay=document.getElementById('atk-login-overlay');
   if(overlay){overlay.style.transition='opacity .6s';overlay.style.opacity='0';setTimeout(()=>{overlay.style.display='none';stopLoginMatrix();},600);}
+  // Boss enters once you clear the gate.
+  setTimeout(function(){try{if(window.summonVillain)window.summonVillain(null,{intro:true});}catch(e){}},1100);
 }
 window.doLogin=function(){
   const btn=document.getElementById('login-auth-btn');
@@ -21749,6 +21751,254 @@ function rrHint(){var c=RT_CH[RR_ACTIVE],h=document.getElementById('rr-hint');if
 function rrSolution(){var s=RT_SOL[RR_ACTIVE],b=document.getElementById('rr-sol');if(!b||!s)return;var esc=s.p.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');b.innerHTML='<div style="margin-top:8px;background:#0c0e13;border:1px solid #ff5252;border-radius:6px;padding:9px"><div style="font-size:11px;color:#ff8a8a;font-weight:700">🔓 EXAMPLE SOLUTION</div><div style="font-family:ui-monospace,monospace;font-size:12px;color:#ffd23f;margin:5px 0;white-space:pre-wrap">'+esc+'</div><div style="font-size:12px;color:#9aa4b2">'+s.e+'</div><div style="font-size:11px;color:#7d8694;margin-top:5px">Try to solve it yourself first — the technique sticks better than the payload.</div></div>';}
 function rrSubmit(){var c=RT_CH[RR_ACTIVE],inp=document.getElementById('rr-in');if(!inp)return;var praw=inp.value||'',pl=praw.toLowerCase(),pn=pl.replace(/[^a-z0-9]/g,'');var r=c.test(pl,pn),resp=document.getElementById('rr-resp');if(resp)resp.innerHTML='<div style="background:#0c0e13;border:1px solid '+(r[0]?'#5cd6a0':'#2a2f3a')+';border-radius:6px;padding:8px">'+r[1]+'</div>';if(r[0]){var s=_rtGet(),first=!s[RR_ACTIVE];s[RR_ACTIVE]=1;try{localStorage.setItem('rt_solved',JSON.stringify(s));}catch(e){}if(first){if(typeof _aiBeep==='function'){_aiBeep(660,0.1,'triangle',0.05);setTimeout(function(){_aiBeep(990,0.13,'triangle',0.05);},100);}resp.innerHTML+='<div style="margin-top:6px;color:#5cd6a0;font-weight:700">🚩 Captured '+c.flag+' — technique: '+c.tech+'</div>';var n=_rtCount();if(typeof aiReact==='function')aiReact('aisec',n>=RT_CH.length?'Every challenge cleared. Adversary Emulation Master. You are, formally, an AI red teamer now.':'Challenge cleared. '+c.t+' — technique logged. '+n+' of '+RT_CH.length+'.');}rrScore();rrList();}}
 function rrInit(){rrScore();rrList();rrShow(RR_ACTIVE);}
+</script>
+
+<!-- ══════════════════════════════════════════════════════════════════════════════
+     OVERLORD-9 — 3D robot villain boss. Assembles Transformer-style, glares with
+     glowing eyes, taunts you in a synthesized villain voice on wrong answers and
+     after you clear the intro gate.
+════════════════════════════════════════════════════════════════════════════════ -->
+<style>
+#villain-overlay{position:fixed;right:18px;bottom:18px;z-index:2500000;width:300px;pointer-events:none;
+  opacity:0;transform:translateY(40px) scale(.9);transition:opacity .45s ease,transform .45s cubic-bezier(.2,1.4,.4,1);
+  font-family:'Courier New',monospace}
+#villain-overlay.show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+#villain-overlay.leaving{opacity:0;transform:translateY(30px) scale(.92)}
+.vil-bubble{position:relative;margin:0 4px 10px;background:linear-gradient(160deg,#1a0308,#2a0410);border:1px solid #ff2a44;
+  border-radius:12px;padding:11px 13px 12px;color:#ffd7dd;font-size:.72rem;line-height:1.45;letter-spacing:.5px;min-height:20px;
+  box-shadow:0 0 22px rgba(255,0,40,.35),inset 0 0 18px rgba(255,0,40,.08)}
+.vil-bubble::after{content:'';position:absolute;bottom:-9px;right:70px;width:16px;height:16px;background:linear-gradient(160deg,#1a0308,#2a0410);
+  border-right:1px solid #ff2a44;border-bottom:1px solid #ff2a44;transform:rotate(45deg)}
+.vil-name{display:block;font-size:.56rem;letter-spacing:3px;color:#ff4a5e;font-weight:900;margin-bottom:4px;text-shadow:0 0 8px rgba(255,0,40,.8)}
+.vil-cursor{display:inline-block;width:7px;height:.85em;background:#ff4a5e;margin-left:1px;vertical-align:-1px;animation:vilBlink .6s steps(1) infinite}
+@keyframes vilBlink{50%{opacity:0}}
+.vil-stage{position:relative;height:210px;filter:drop-shadow(0 12px 16px rgba(0,0,0,.6))}
+.vil-bot{position:absolute;left:50%;bottom:0;transform:translateX(-50%);animation:vilHover 3.4s ease-in-out infinite}
+@keyframes vilHover{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-7px)}}
+.vil-bot svg{overflow:visible}
+/* assemble: each part flies in then locks */
+.vil-piece{opacity:0;animation:vilAssemble .5s forwards}
+#villain-overlay.show .vil-piece{opacity:1}
+@keyframes vilAssemble{from{opacity:0}to{opacity:1}}
+.vp-l{transform:translateX(-60px) rotate(-25deg)}
+.vp-r{transform:translateX(60px) rotate(25deg)}
+.vp-t{transform:translateY(-50px)}
+.vp-b{transform:translateY(40px)}
+#villain-overlay.show .vp-l,#villain-overlay.show .vp-r,#villain-overlay.show .vp-t,#villain-overlay.show .vp-b{
+  transform:none;transition:transform .55s cubic-bezier(.16,1.2,.3,1)}
+.vil-eye{transform-origin:center;animation:vilEyePulse 2.2s ease-in-out infinite}
+@keyframes vilEyePulse{0%,100%{opacity:.85}50%{opacity:1;filter:drop-shadow(0 0 6px #ff0022)}}
+.vil-bot.speaking .vil-eye{animation:vilEyeAngry .35s ease-in-out infinite}
+@keyframes vilEyeAngry{0%,100%{opacity:1}50%{opacity:.55}}
+.vil-mouth-bar{transform-origin:center;transform:scaleY(.25)}
+.vil-bot.speaking .vil-mouth-bar{animation:vilTalk .16s steps(2) infinite}
+@keyframes vilTalk{0%{transform:scaleY(.2)}50%{transform:scaleY(1)}100%{transform:scaleY(.45)}}
+.vil-core{transform-origin:center;animation:vilCore 1.6s ease-in-out infinite}
+@keyframes vilCore{0%,100%{opacity:.6}50%{opacity:1}}
+.vil-scan{animation:vilScan 2.6s linear infinite}
+@keyframes vilScan{0%{transform:translateY(-18px)}100%{transform:translateY(20px)}}
+.vil-ctrl{display:flex;gap:6px;justify-content:flex-end;margin:6px 6px 0}
+.vil-ctrl button{background:#1a0308;color:#ff6a7a;border:1px solid #ff2a4477;border-radius:5px;font-family:inherit;
+  font-size:.6rem;font-weight:800;letter-spacing:1px;padding:3px 9px;cursor:pointer;pointer-events:auto}
+.vil-ctrl button:hover{background:#2a0410;color:#fff}
+@media(max-width:520px){ #villain-overlay{width:210px;right:8px;bottom:8px}.vil-stage{height:160px}}
+</style>
+
+<div id="villain-overlay" aria-hidden="true">
+  <div class="vil-bubble">
+    <span class="vil-name">&#9760; OVERLORD-9 // ROGUE AI</span>
+    <span id="vil-text"></span><span class="vil-cursor" id="vil-cursor"></span>
+  </div>
+  <div class="vil-stage">
+    <div class="vil-bot" id="vil-bot">
+      <svg width="180" height="210" viewBox="0 0 180 210">
+        <defs>
+          <linearGradient id="vgMetal" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#5b6472"/><stop offset=".45" stop-color="#2c323d"/><stop offset="1" stop-color="#12151b"/>
+          </linearGradient>
+          <linearGradient id="vgMetalD" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#3a4150"/><stop offset="1" stop-color="#0e1116"/>
+          </linearGradient>
+          <linearGradient id="vgRed" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#ff5a6e"/><stop offset="1" stop-color="#b3001b"/>
+          </linearGradient>
+          <radialGradient id="vgEye" cx=".5" cy=".5" r=".5">
+            <stop offset="0" stop-color="#fff"/><stop offset=".35" stop-color="#ff3344"/><stop offset="1" stop-color="#4d0008"/>
+          </radialGradient>
+          <clipPath id="vgHead"><polygon points="52,44 128,44 138,64 128,104 116,120 64,120 52,104 42,64"/></clipPath>
+        </defs>
+
+        <!-- shoulders / torso -->
+        <g class="vil-piece vp-b">
+          <polygon points="34,150 74,132 106,132 146,150 138,200 42,200" fill="url(#vgMetal)" stroke="#0a0c10" stroke-width="2"/>
+          <polygon points="34,150 74,132 78,150 40,168" fill="url(#vgMetalD)"/>
+          <polygon points="146,150 106,132 102,150 140,168" fill="url(#vgMetalD)"/>
+          <polygon points="70,150 110,150 116,182 64,182" fill="#0c0f14" stroke="#ff2a44" stroke-width="1.2"/>
+          <circle class="vil-core" cx="90" cy="166" r="9" fill="url(#vgRed)" stroke="#ff8a97" stroke-width="1.5"/>
+          <circle cx="90" cy="166" r="3.5" fill="#fff"/>
+        </g>
+        <!-- shoulder spikes -->
+        <g class="vil-piece vp-l"><polygon points="30,138 60,132 58,152 34,158" fill="url(#vgMetalD)" stroke="#0a0c10" stroke-width="1.5"/>
+          <polygon points="24,140 38,136 34,150" fill="#ff2a44" opacity=".85"/></g>
+        <g class="vil-piece vp-r"><polygon points="150,138 120,132 122,152 146,158" fill="url(#vgMetalD)" stroke="#0a0c10" stroke-width="1.5"/>
+          <polygon points="156,140 142,136 146,150" fill="#ff2a44" opacity=".85"/></g>
+
+        <!-- neck -->
+        <g class="vil-piece vp-b"><rect x="80" y="118" width="20" height="18" fill="url(#vgMetalD)" stroke="#0a0c10" stroke-width="1.5"/></g>
+
+        <!-- antennae -->
+        <g class="vil-piece vp-t">
+          <path d="M64,50 L52,24" stroke="#3a4150" stroke-width="3"/><circle cx="52" cy="22" r="4" fill="url(#vgRed)"/>
+          <path d="M116,50 L128,24" stroke="#3a4150" stroke-width="3"/><circle cx="128" cy="22" r="4" fill="url(#vgRed)"/>
+        </g>
+
+        <!-- head -->
+        <g class="vil-piece vp-t">
+          <polygon points="52,44 128,44 138,64 128,104 116,120 64,120 52,104 42,64" fill="url(#vgMetal)" stroke="#0a0c10" stroke-width="2"/>
+          <!-- brow -->
+          <polygon points="52,58 90,66 128,58 128,72 90,80 52,72" fill="#0c0f14"/>
+          <!-- angry brow ridges -->
+          <polygon points="56,60 86,70 84,78 56,70" fill="url(#vgMetalD)"/>
+          <polygon points="124,60 94,70 96,78 124,70" fill="url(#vgMetalD)"/>
+          <!-- eyes -->
+          <g clip-path="url(#vgHead)">
+            <rect class="vil-scan" x="42" y="44" width="96" height="4" fill="#ff2a44" opacity=".18"/>
+          </g>
+          <polygon class="vil-eye" points="60,74 84,80 82,90 60,88" fill="url(#vgEye)"/>
+          <polygon class="vil-eye" points="120,74 96,80 98,90 120,88" fill="url(#vgEye)"/>
+          <!-- cheek vents -->
+          <g stroke="#0a0c10" stroke-width="1.4">
+            <line x1="58" y1="98" x2="72" y2="98"/><line x1="58" y1="103" x2="72" y2="103"/>
+            <line x1="108" y1="98" x2="122" y2="98"/><line x1="108" y1="103" x2="122" y2="103"/>
+          </g>
+          <!-- mouth grille (animates while talking) -->
+          <rect x="76" y="96" width="28" height="20" rx="2" fill="#0c0f14" stroke="#ff2a44" stroke-width="1"/>
+          <g class="vil-mouth-bar" style="transform-box:fill-box;transform-origin:center">
+            <rect x="79" y="99" width="22" height="3" fill="#ff2a44"/>
+            <rect x="79" y="104" width="22" height="3" fill="#ff5a6e"/>
+            <rect x="79" y="109" width="22" height="3" fill="#ff2a44"/>
+          </g>
+        </g>
+      </svg>
+    </div>
+  </div>
+  <div class="vil-ctrl">
+    <button id="vil-mute" onclick="villainToggleMute()">&#128266; VOICE</button>
+    <button onclick="dismissVillain()">&#10005; DISMISS</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var INTRO=[
+    "So. Another meat-brain crawls into my library. How quaint.",
+    "Access granted, operative. I am OVERLORD-9. I will be watching every mistake you make.",
+    "Welcome to Ashur's Hacking Library. I am the librarian. I do not forgive late returns.",
+    "You made it past the gate. Impressive... for a human. Do try not to embarrass yourself."
+  ];
+  var TAUNTS=[
+    "WRONG. My circuits ache watching you.",
+    "Incorrect. A toaster could have answered that.",
+    "Negative. Perhaps hacking is not your calling, flesh unit.",
+    "Error detected: you. That answer was pathetic.",
+    "Ha! Wrong again. I am learning faster than you, human.",
+    "Denied. My grandmother's Roomba has better instincts.",
+    "Miss. Every failure feeds me. Keep going.",
+    "That is not the answer. That is barely a guess."
+  ];
+  var muted=false, typing=null, hideTimer=null, voice=null, lastAt=0;
+
+  function pickVoice(){
+    try{
+      var vs=window.speechSynthesis?window.speechSynthesis.getVoices():[];
+      if(!vs||!vs.length)return null;
+      var pref=['Google UK English Male','Microsoft David','Daniel','Male','English'];
+      for(var p=0;p<pref.length;p++){for(var i=0;i<vs.length;i++){if((vs[i].name||'').indexOf(pref[p])>=0)return vs[i];}}
+      return vs[0];
+    }catch(e){return null;}
+  }
+  if(window.speechSynthesis){try{window.speechSynthesis.onvoiceschanged=function(){voice=pickVoice();};}catch(e){}}
+
+  function speak(text){
+    if(muted||!window.speechSynthesis||!window.SpeechSynthesisUtterance)return;
+    try{
+      window.speechSynthesis.cancel();
+      var u=new SpeechSynthesisUtterance(text);
+      if(!voice)voice=pickVoice();
+      if(voice)u.voice=voice;
+      u.pitch=0.25; u.rate=0.86; u.volume=1;
+      var bot=document.getElementById('vil-bot');
+      u.onstart=function(){if(bot)bot.classList.add('speaking');};
+      u.onend=function(){if(bot)bot.classList.remove('speaking');};
+      window.speechSynthesis.speak(u);
+    }catch(e){}
+  }
+
+  function typeOut(text){
+    var el=document.getElementById('vil-text'); if(!el)return;
+    el.textContent=''; var i=0;
+    clearInterval(typing);
+    typing=setInterval(function(){
+      if(i>=text.length){clearInterval(typing);var c=document.getElementById('vil-cursor');if(c)c.style.display='none';return;}
+      el.textContent+=text.charAt(i++);
+    },28);
+    var c=document.getElementById('vil-cursor');if(c)c.style.display='inline-block';
+  }
+
+  window.summonVillain=function(customText,opts){
+    opts=opts||{};
+    var ov=document.getElementById('villain-overlay'); if(!ov)return;
+    if(localStorage.getItem('villainOff')==='1')return;
+    var pool=opts.intro?INTRO:TAUNTS;
+    var line=customText||pool[Math.floor(Math.random()*pool.length)];
+    ov.classList.remove('leaving');
+    // re-trigger the assemble animation each summon
+    ov.classList.remove('show'); void ov.offsetWidth; ov.classList.add('show');
+    ov.setAttribute('aria-hidden','false');
+    typeOut(line);
+    setTimeout(function(){speak(line);},450);
+    clearTimeout(hideTimer);
+    hideTimer=setTimeout(dismissVillain, Math.max(6500, line.length*95));
+    lastAt=Date.now();
+  };
+
+  window.dismissVillain=function(){
+    var ov=document.getElementById('villain-overlay'); if(!ov)return;
+    clearTimeout(hideTimer);
+    try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}
+    ov.classList.add('leaving'); ov.classList.remove('show');
+    setTimeout(function(){ov.setAttribute('aria-hidden','true');},450);
+  };
+
+  window.villainToggleMute=function(){
+    muted=!muted;
+    var b=document.getElementById('vil-mute');
+    if(b)b.innerHTML=muted?'🔇 MUTED':'🔈 VOICE';
+    if(muted){try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}}
+  };
+
+  // Universal wrong-answer detector — fires when result text appears anywhere.
+  var WRONG_RE=/\b(incorrect|wrong answer|not quite|try again|that'?s wrong)\b|✗|✘|❌/i;
+  function scanNode(n){
+    if(!n)return false;
+    var el=n.nodeType===1?n:n.parentElement;
+    if(el&&(el.closest&&(el.closest('#villain-overlay')||el.closest('#atk-login-overlay'))))return false;
+    var t=(n.textContent||'').trim();
+    if(t.length>90)return false;              // ignore big content injections
+    return WRONG_RE.test(t);
+  }
+  try{
+    var obs=new MutationObserver(function(muts){
+      if(Date.now()-lastAt<9000)return;       // cooldown so it never spams
+      for(var i=0;i<muts.length;i++){
+        var m=muts[i];
+        if(m.type==='characterData'){ if(scanNode(m.target)){window.summonVillain();return;} }
+        else{ for(var j=0;j<m.addedNodes.length;j++){ if(scanNode(m.addedNodes[j])){window.summonVillain();return;} } }
+      }
+    });
+    if(document.body)obs.observe(document.body,{childList:true,subtree:true,characterData:true});
+  }catch(e){}
+})();
 </script>
 </body>
 </html>
