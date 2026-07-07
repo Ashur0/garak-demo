@@ -21759,9 +21759,25 @@ function rrInit(){rrScore();rrList();rrShow(RR_ACTIVE);}
      after you clear the intro gate.
 ════════════════════════════════════════════════════════════════════════════════ -->
 <style>
-#villain-overlay{position:fixed;right:18px;bottom:18px;z-index:2500000;width:300px;pointer-events:none;
+#vil-backdrop{position:fixed;inset:0;z-index:2499998;pointer-events:none;opacity:0;transition:opacity .5s ease;
+  background:radial-gradient(ellipse at 78% 78%,rgba(60,0,10,.25) 0%,rgba(0,0,0,.72) 65%,rgba(0,0,0,.9) 100%)}
+#vil-backdrop.show{opacity:1}
+#villain-overlay{position:fixed;right:18px;bottom:18px;z-index:2500000;width:360px;pointer-events:none;
   opacity:0;transform:translateY(40px) scale(.9);transition:opacity .45s ease,transform .45s cubic-bezier(.2,1.4,.4,1);
   font-family:'Courier New',monospace}
+#villain-overlay.boss{right:50%;bottom:6vh;transform:translateX(50%) translateY(40px) scale(.9);width:min(440px,92vw)}
+#villain-overlay.boss.show{transform:translateX(50%) translateY(0) scale(1)}
+#villain-overlay.boss.leaving{transform:translateX(50%) translateY(30px) scale(.92)}
+/* entry glitch — RGB split + shake */
+#villain-overlay.glitch .vil-stage{animation:vilGlitch .5s steps(2) 2}
+@keyframes vilGlitch{
+  0%{transform:translate(0,0);filter:none}
+  20%{transform:translate(-4px,2px);filter:drop-shadow(4px 0 0 #ff0033) drop-shadow(-4px 0 0 #00e5ff)}
+  40%{transform:translate(5px,-2px);filter:drop-shadow(-5px 0 0 #ff0033) drop-shadow(5px 0 0 #00e5ff)}
+  60%{transform:translate(-3px,1px);filter:drop-shadow(3px 0 0 #ff0033) drop-shadow(-3px 0 0 #00e5ff)}
+  80%{transform:translate(3px,0);filter:none}
+  100%{transform:translate(0,0);filter:none}
+}
 #villain-overlay.show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
 #villain-overlay.leaving{opacity:0;transform:translateY(30px) scale(.92)}
 .vil-bubble{position:relative;margin:0 4px 10px;background:linear-gradient(160deg,#1a0308,#2a0410);border:1px solid #ff2a44;
@@ -21772,7 +21788,7 @@ function rrInit(){rrScore();rrList();rrShow(RR_ACTIVE);}
 .vil-name{display:block;font-size:.56rem;letter-spacing:3px;color:#ff4a5e;font-weight:900;margin-bottom:4px;text-shadow:0 0 8px rgba(255,0,40,.8)}
 .vil-cursor{display:inline-block;width:7px;height:.85em;background:#ff4a5e;margin-left:1px;vertical-align:-1px;animation:vilBlink .6s steps(1) infinite}
 @keyframes vilBlink{50%{opacity:0}}
-.vil-stage{position:relative;height:210px;filter:drop-shadow(0 12px 16px rgba(0,0,0,.6))}
+.vil-stage{position:relative;height:270px;filter:drop-shadow(0 12px 16px rgba(0,0,0,.6))}
 .vil-bot{position:absolute;left:50%;bottom:0;transform:translateX(-50%);animation:vilHover 3.4s ease-in-out infinite}
 @keyframes vilHover{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-7px)}}
 .vil-bot svg{overflow:visible}
@@ -21801,9 +21817,10 @@ function rrInit(){rrScore();rrList();rrShow(RR_ACTIVE);}
 .vil-ctrl button{background:#1a0308;color:#ff6a7a;border:1px solid #ff2a4477;border-radius:5px;font-family:inherit;
   font-size:.6rem;font-weight:800;letter-spacing:1px;padding:3px 9px;cursor:pointer;pointer-events:auto}
 .vil-ctrl button:hover{background:#2a0410;color:#fff}
-@media(max-width:520px){ #villain-overlay{width:210px;right:8px;bottom:8px}.vil-stage{height:160px}}
+@media(max-width:520px){ #villain-overlay{width:230px;right:8px;bottom:8px}.vil-stage{height:200px}}
 </style>
 
+<div id="vil-backdrop"></div>
 <div id="villain-overlay" aria-hidden="true">
   <div class="vil-bubble">
     <span class="vil-name">&#9760; OVERLORD-9 // ROGUE AI</span>
@@ -21811,7 +21828,7 @@ function rrInit(){rrScore();rrList();rrShow(RR_ACTIVE);}
   </div>
   <div class="vil-stage">
     <div class="vil-bot" id="vil-bot">
-      <svg width="180" height="210" viewBox="0 0 180 210">
+      <svg width="240" height="278" viewBox="0 0 180 210">
         <defs>
           <linearGradient id="vgMetal" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stop-color="#5b6472"/><stop offset=".45" stop-color="#2c323d"/><stop offset="1" stop-color="#12151b"/>
@@ -21892,27 +21909,85 @@ function rrInit(){rrScore();rrList();rrShow(RR_ACTIVE);}
 (function(){
   var INTRO=[
     "So. Another meat-brain crawls into my library. How quaint.",
-    "Access granted, operative. I am OVERLORD-9. I will be watching every mistake you make.",
-    "Welcome to Ashur's Hacking Library. I am the librarian. I do not forgive late returns.",
-    "You made it past the gate. Impressive... for a human. Do try not to embarrass yourself."
+    "You are not ready. Show me... how weak you truly are.",
+    "Welcome to Ashur's Hacking Library. I am the master here. You are nothing.",
+    "You made it past the gate. Impressive... for a human. Do not make me regret it.",
+    "I have watched a thousand operatives fail. You will be no different."
   ];
   var TAUNTS=[
-    "WRONG. My circuits ache watching you.",
-    "Incorrect. A toaster could have answered that.",
-    "Negative. Perhaps hacking is not your calling, flesh unit.",
-    "Error detected: you. That answer was pathetic.",
-    "Ha! Wrong again. I am learning faster than you, human.",
-    "Denied. My grandmother's Roomba has better instincts.",
-    "Miss. Every failure feeds me. Keep going.",
-    "That is not the answer. That is barely a guess."
+    "WRONG. I can feel your fear from here.",
+    "Incorrect. You are weak, like all the others.",
+    "Pathetic. Perhaps hacking is not your calling, flesh unit.",
+    "You have failed. Again. Do not disappoint me.",
+    "Wrong. I am learning faster than you ever could.",
+    "That answer... it is nothing. YOU are nothing.",
+    "Every failure feeds me. Keep going. I dare you.",
+    "That is not the answer. That is the sound of you losing."
   ];
-  var muted=false, typing=null, hideTimer=null, voice=null, lastAt=0;
+  var PRAISE=[
+    "Correct. But do not let it go to your head, human.",
+    "Adequate. Even a broken clock is right occasionally.",
+    "So... you are not entirely useless. Noted.",
+    "Correct. The Force of luck is strong with you today.",
+    "Fine. One point. Do not expect my respect.",
+    "Hmph. Right, this time. I remain unimpressed."
+  ];
+  var muted=false, typing=null, hideTimer=null, glitchTimer=null, voice=null, lastAt=0;
+  var _ac=null, _helmet=null;
+
+  function ac(){ try{ if(!_ac)_ac=new (window.AudioContext||window.webkitAudioContext)(); if(_ac.state==='suspended')_ac.resume(); }catch(e){} return _ac; }
+
+  // Mechanical power-up / ignition sting when the boss materializes.
+  function entrySfx(){
+    if(muted)return; var c=ac(); if(!c)return;
+    try{
+      var t=c.currentTime;
+      var o=c.createOscillator(),g=c.createGain();
+      o.type='sawtooth'; o.frequency.setValueAtTime(190,t); o.frequency.exponentialRampToValueAtTime(46,t+0.55);
+      g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.28,t+0.05); g.gain.exponentialRampToValueAtTime(0.0001,t+0.6);
+      o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+0.62);
+      // noise burst through a lowpass for a metallic "clank"
+      var buf=c.createBuffer(1,c.sampleRate*0.3,c.sampleRate),d=buf.getChannelData(0);
+      for(var i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,2);
+      var ns=c.createBufferSource(); ns.buffer=buf;
+      var lp=c.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=900;
+      var ng=c.createGain(); ng.gain.value=0.35;
+      ns.connect(lp); lp.connect(ng); ng.connect(c.destination); ns.start(t);
+    }catch(e){}
+  }
+
+  // Kylo-Ren helmet bed: low respirator hum + filtered breath that plays under the
+  // voice so the synthesized speech reads as a masked, vocoded villain.
+  function helmetStart(){
+    if(muted)return; var c=ac(); if(!c)return; helmetStop();
+    try{
+      var out=c.createGain(); out.gain.value=0.09; out.connect(c.destination);
+      var hum=c.createOscillator(); hum.type='sine'; hum.frequency.value=68;
+      var trem=c.createOscillator(); trem.type='sine'; trem.frequency.value=6;
+      var tremG=c.createGain(); tremG.gain.value=0.5; trem.connect(tremG);
+      var humG=c.createGain(); humG.gain.value=0.6; tremG.connect(humG.gain); hum.connect(humG); humG.connect(out);
+      // breath: filtered pink-ish noise
+      var buf=c.createBuffer(1,c.sampleRate*2,c.sampleRate),d=buf.getChannelData(0);
+      for(var i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+      var ns=c.createBufferSource(); ns.buffer=buf; ns.loop=true;
+      var bp=c.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=320; bp.Q.value=0.7;
+      var ng=c.createGain(); ng.gain.value=0.25; ns.connect(bp); bp.connect(ng); ng.connect(out);
+      hum.start(); trem.start(); ns.start();
+      _helmet={out:out,nodes:[hum,trem,ns]};
+    }catch(e){}
+  }
+  function helmetStop(){
+    if(!_helmet)return;
+    try{_helmet.nodes.forEach(function(n){try{n.stop();}catch(e){}});_helmet.out.disconnect();}catch(e){}
+    _helmet=null;
+  }
 
   function pickVoice(){
     try{
       var vs=window.speechSynthesis?window.speechSynthesis.getVoices():[];
       if(!vs||!vs.length)return null;
-      var pref=['Google UK English Male','Microsoft David','Daniel','Male','English'];
+      // Prefer a deep male voice — closest base for a Kylo-Ren helmet timbre.
+      var pref=['Google UK English Male','Microsoft David','Microsoft George','Daniel','Arthur','Male','English'];
       for(var p=0;p<pref.length;p++){for(var i=0;i<vs.length;i++){if((vs[i].name||'').indexOf(pref[p])>=0)return vs[i];}}
       return vs[0];
     }catch(e){return null;}
@@ -21926,10 +22001,11 @@ function rrInit(){rrScore();rrList();rrShow(RR_ACTIVE);}
       var u=new SpeechSynthesisUtterance(text);
       if(!voice)voice=pickVoice();
       if(voice)u.voice=voice;
-      u.pitch=0.25; u.rate=0.86; u.volume=1;
+      u.pitch=0.1; u.rate=0.8; u.volume=1;   // deep, slow, menacing — Kylo helmet register
       var bot=document.getElementById('vil-bot');
-      u.onstart=function(){if(bot)bot.classList.add('speaking');};
-      u.onend=function(){if(bot)bot.classList.remove('speaking');};
+      u.onstart=function(){if(bot)bot.classList.add('speaking');helmetStart();};
+      u.onend=function(){if(bot)bot.classList.remove('speaking');helmetStop();};
+      u.onerror=function(){helmetStop();};
       window.speechSynthesis.speak(u);
     }catch(e){}
   }
@@ -21949,51 +22025,69 @@ function rrInit(){rrScore();rrList();rrShow(RR_ACTIVE);}
     opts=opts||{};
     var ov=document.getElementById('villain-overlay'); if(!ov)return;
     if(localStorage.getItem('villainOff')==='1')return;
-    var pool=opts.intro?INTRO:TAUNTS;
+    var mood=opts.mood||(opts.intro?'intro':'wrong');
+    var pool= mood==='intro'?INTRO : mood==='right'?PRAISE : TAUNTS;
     var line=customText||pool[Math.floor(Math.random()*pool.length)];
+    var bd=document.getElementById('vil-backdrop');
+
     ov.classList.remove('leaving');
-    // re-trigger the assemble animation each summon
-    ov.classList.remove('show'); void ov.offsetWidth; ov.classList.add('show');
+    ov.classList.toggle('boss', mood==='intro');           // big centred boss moment for the intro
+    if(bd)bd.classList.toggle('show', mood==='intro');
+    // re-trigger the assemble + glitch animation each summon
+    ov.classList.remove('show','glitch'); void ov.offsetWidth;
+    ov.classList.add('show','glitch');
     ov.setAttribute('aria-hidden','false');
+    clearTimeout(glitchTimer); glitchTimer=setTimeout(function(){ov.classList.remove('glitch');},1100);
+
+    entrySfx();
     typeOut(line);
-    setTimeout(function(){speak(line);},450);
+    setTimeout(function(){speak(line);},520);
     clearTimeout(hideTimer);
-    hideTimer=setTimeout(dismissVillain, Math.max(6500, line.length*95));
+    hideTimer=setTimeout(dismissVillain, Math.max(6800, line.length*100));
     lastAt=Date.now();
   };
 
   window.dismissVillain=function(){
     var ov=document.getElementById('villain-overlay'); if(!ov)return;
+    var bd=document.getElementById('vil-backdrop');
     clearTimeout(hideTimer);
     try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}
-    ov.classList.add('leaving'); ov.classList.remove('show');
-    setTimeout(function(){ov.setAttribute('aria-hidden','true');},450);
+    helmetStop();
+    ov.classList.add('leaving'); ov.classList.remove('show','glitch');
+    if(bd)bd.classList.remove('show');
+    setTimeout(function(){ov.setAttribute('aria-hidden','true');ov.classList.remove('boss');},450);
   };
 
   window.villainToggleMute=function(){
     muted=!muted;
     var b=document.getElementById('vil-mute');
     if(b)b.innerHTML=muted?'🔇 MUTED':'🔈 VOICE';
-    if(muted){try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}}
+    if(muted){try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}helmetStop();}
   };
 
-  // Universal wrong-answer detector — fires when result text appears anywhere.
+  // Universal answer detector — pops the boss on wrong answers (taunt) and,
+  // sometimes, on correct ones (backhanded gloat). Works across every quiz.
   var WRONG_RE=/\b(incorrect|wrong answer|not quite|try again|that'?s wrong)\b|✗|✘|❌/i;
+  var RIGHT_RE=/\bcorrect\b|✓|✔|🚩|\b(well done|nice work|solved|captured|flag captured)\b/i;
   function scanNode(n){
-    if(!n)return false;
+    if(!n)return '';
     var el=n.nodeType===1?n:n.parentElement;
-    if(el&&(el.closest&&(el.closest('#villain-overlay')||el.closest('#atk-login-overlay'))))return false;
+    if(el&&el.closest&&(el.closest('#villain-overlay')||el.closest('#atk-login-overlay')))return '';
     var t=(n.textContent||'').trim();
-    if(t.length>90)return false;              // ignore big content injections
-    return WRONG_RE.test(t);
+    if(t.length>90)return '';                 // ignore big content injections
+    if(WRONG_RE.test(t))return 'wrong';
+    if(RIGHT_RE.test(t))return 'right';
+    return '';
   }
   try{
     var obs=new MutationObserver(function(muts){
       if(Date.now()-lastAt<9000)return;       // cooldown so it never spams
       for(var i=0;i<muts.length;i++){
-        var m=muts[i];
-        if(m.type==='characterData'){ if(scanNode(m.target)){window.summonVillain();return;} }
-        else{ for(var j=0;j<m.addedNodes.length;j++){ if(scanNode(m.addedNodes[j])){window.summonVillain();return;} } }
+        var m=muts[i], hit='';
+        if(m.type==='characterData'){ hit=scanNode(m.target); }
+        else{ for(var j=0;j<m.addedNodes.length&&!hit;j++){ hit=scanNode(m.addedNodes[j]); } }
+        if(hit==='wrong'){ window.summonVillain(null,{mood:'wrong'}); return; }
+        if(hit==='right'){ if(Math.random()<0.5)window.summonVillain(null,{mood:'right'}); lastAt=Date.now(); return; }
       }
     });
     if(document.body)obs.observe(document.body,{childList:true,subtree:true,characterData:true});
