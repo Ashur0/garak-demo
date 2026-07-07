@@ -22146,12 +22146,20 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
   }
 
   // Primary: play the pre-baked, browser-independent Kylo-helmet clip.
-  // ── Voice: temporary browser speech (deep pitch) until real Kylo Ren audio. ──
+  // ── Voice: real Kylo Ren clip for the intro; deep synth speech for taunts. ──
   var curAudio=null, _talkT=null;
   function speak(text,mood,idx){
     if(muted)return;
-    if(window.speechSynthesis&&window.SpeechSynthesisUtterance){
-      speakTTS(text);                      // deep synthesized voice + jaw/flash via setTalking
+    if(curAudio){try{curAudio.pause();}catch(e){}curAudio=null;}
+    var clip = (mood==='intro') ? '/static/villain/kylo_intro.mp3' : null;
+    if(clip){
+      var a=new Audio(clip); a.volume=1; curAudio=a;
+      a.onplay=function(){setTalking(true);};
+      a.onended=function(){setTalking(false);};
+      a.onerror=function(){setTalking(false);speakTTS(text);};   // clip missing -> synth
+      var p=a.play(); if(p&&p.catch)p.catch(function(){speakTTS(text);});  // autoplay blocked -> synth
+    }else if(window.speechSynthesis&&window.SpeechSynthesisUtterance){
+      speakTTS(text);                      // deep synthesized voice for wrong/right taunts
     }else{
       setTalking(true);                    // no speech support -> silent, visuals only
       clearTimeout(_talkT);
