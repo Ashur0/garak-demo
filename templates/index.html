@@ -21825,6 +21825,8 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
 .vil-jaw{transform:translateY(0)}
 .vil-bot.speaking .vil-jaw{animation:vilJaw .17s ease-in-out infinite}
 @keyframes vilJaw{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
+/* when a real clip is playing, JS drives the jaw from live audio volume (lip-sync) */
+.vil-bot.lipsync .vil-jaw{animation:none!important}
 /* assemble: each part flies in then locks */
 .vil-piece{opacity:0;animation:vilAssemble .5s forwards}
 #villain-overlay.show .vil-piece{opacity:1}
@@ -22146,18 +22148,51 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
   }
 
   // Primary: play the pre-baked, browser-independent Kylo-helmet clip.
+  // ── Lip-sync: drive the jaw from the clip's live audio volume ──
+  var _lsCtx=null, _lsRAF=null;
+  function startLipSync(audioEl){
+    try{
+      if(!_lsCtx)_lsCtx=new (window.AudioContext||window.webkitAudioContext)();
+      if(_lsCtx.state==='suspended')_lsCtx.resume();
+      var src=_lsCtx.createMediaElementSource(audioEl);   // one source per element (fresh each time)
+      var an=_lsCtx.createAnalyser(); an.fftSize=256;
+      src.connect(an); an.connect(_lsCtx.destination);
+      var data=new Uint8Array(an.fftSize);
+      var bot=document.getElementById('vil-bot');
+      var jaw=document.querySelector('#vil-bot .vil-jaw');
+      if(bot)bot.classList.add('lipsync');
+      (function frame(){
+        an.getByteTimeDomainData(data);
+        var sum=0; for(var i=0;i<data.length;i++){var v=(data[i]-128)/128; sum+=v*v;}
+        var rms=Math.sqrt(sum/data.length);               // ~0..0.4
+        var open=Math.min(8, rms*30);                     // jaw drop in px, tracks the voice
+        if(jaw)jaw.style.transform='translateY('+open.toFixed(1)+'px)';
+        _lsRAF=requestAnimationFrame(frame);
+      })();
+    }catch(e){}
+  }
+  function stopLipSync(){
+    if(_lsRAF){cancelAnimationFrame(_lsRAF); _lsRAF=null;}
+    var bot=document.getElementById('vil-bot'); if(bot)bot.classList.remove('lipsync');
+    var jaw=document.querySelector('#vil-bot .vil-jaw'); if(jaw)jaw.style.transform='translateY(0)';
+  }
+
   // ── Voice: real Kylo Ren clip for the intro; deep synth speech for taunts. ──
   var curAudio=null, _talkT=null;
   function speak(text,mood,idx){
     if(muted)return;
     if(curAudio){try{curAudio.pause();}catch(e){}curAudio=null;}
-    var clip = (mood==='intro') ? '/static/villain/kylo_intro.mp3' : null;
+    // intro plays the supplied Kylo clip; wrong/right play mp3s if you add them
+    // (static/villain/wrong_0.mp3, right_0.mp3, …), else fall back to synth voice.
+    var clip = (mood==='intro') ? '/static/villain/kylo_intro.mp3'
+             : (mood&&idx!=null) ? '/static/villain/'+mood+'_'+idx+'.mp3'
+             : null;
     if(clip){
       var a=new Audio(clip); a.volume=1; curAudio=a;
-      a.onplay=function(){setTalking(true);};
-      a.onended=function(){setTalking(false);};
-      a.onerror=function(){setTalking(false);speakTTS(text);};   // clip missing -> synth
-      var p=a.play(); if(p&&p.catch)p.catch(function(){speakTTS(text);});  // autoplay blocked -> synth
+      a.onplay=function(){setTalking(true);startLipSync(a);};   // lip-sync jaw to this clip
+      a.onended=function(){setTalking(false);stopLipSync();};
+      a.onerror=function(){setTalking(false);stopLipSync();speakTTS(text);};   // clip missing -> synth
+      var p=a.play(); if(p&&p.catch)p.catch(function(){stopLipSync();speakTTS(text);});  // autoplay blocked -> synth
     }else if(window.speechSynthesis&&window.SpeechSynthesisUtterance){
       speakTTS(text);                      // deep synthesized voice for wrong/right taunts
     }else{
@@ -22214,7 +22249,7 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
     clearTimeout(hideTimer);
     try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}
     if(curAudio){try{curAudio.pause();}catch(e){}curAudio=null;}
-    helmetStop(); setTalking(false);
+    helmetStop(); stopLipSync(); setTalking(false);
     ov.classList.add('leaving'); ov.classList.remove('show','glitch');
     if(bd)bd.classList.remove('show');
     setTimeout(function(){ov.setAttribute('aria-hidden','true');ov.classList.remove('boss');},450);
@@ -22224,7 +22259,7 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
     muted=!muted;
     var b=document.getElementById('vil-mute');
     if(b)b.innerHTML=muted?'🔇 MUTED':'🔈 VOICE';
-    if(muted){try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}if(curAudio){try{curAudio.pause();}catch(e){}curAudio=null;}helmetStop();setTalking(false);}
+    if(muted){try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}if(curAudio){try{curAudio.pause();}catch(e){}curAudio=null;}helmetStop();stopLipSync();setTalking(false);}
   };
 
   // Universal answer detector — pops the boss on wrong answers (taunt) and,
