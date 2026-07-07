@@ -22146,16 +22146,17 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
   }
 
   // Primary: play the pre-baked, browser-independent Kylo-helmet clip.
-  // ── VOICE REMOVED — starting fresh; awaiting a real Kylo Ren voice source. ──
-  // Visual-only for now: jaw, eye-flare and the red/black screen flash still run,
-  // just silent. Re-enable by restoring clip playback here once real audio exists.
+  // ── Voice: temporary browser speech (deep pitch) until real Kylo Ren audio. ──
   var curAudio=null, _talkT=null;
   function speak(text,mood,idx){
     if(muted)return;
-    setTalking(true);
-    clearTimeout(_talkT);
-    var dur=Math.min(8000, Math.max(2600, (text?text.length:30)*85));
-    _talkT=setTimeout(function(){setTalking(false);}, dur);
+    if(window.speechSynthesis&&window.SpeechSynthesisUtterance){
+      speakTTS(text);                      // deep synthesized voice + jaw/flash via setTalking
+    }else{
+      setTalking(true);                    // no speech support -> silent, visuals only
+      clearTimeout(_talkT);
+      _talkT=setTimeout(function(){setTalking(false);}, Math.min(8000, Math.max(2600, (text?text.length:30)*85)));
+    }
   }
 
   function typeOut(text){
