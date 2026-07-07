@@ -12440,6 +12440,7 @@ function endBoot(){
 var _villainGreeted=false;
 function _villainGreet(){
   if(_villainGreeted)return; _villainGreeted=true;
+  window._villainReady=true;   // only NOW may the robot appear (login/onboarding is done)
   setTimeout(function(){try{if(window.summonVillain)window.summonVillain(null,{intro:true});}catch(e){}},900);
 }
 function checkWelcome(){
@@ -22171,6 +22172,7 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
   window.summonVillain=function(customText,opts){
     opts=opts||{};
     var ov=document.getElementById('villain-overlay'); if(!ov)return;
+    if(!window._villainReady)return;                  // stay hidden until login/onboarding is done
     if(localStorage.getItem('villainOff')==='1')return;
     var mood=opts.mood||(opts.intro?'intro':'wrong');
     var pool= mood==='intro'?INTRO : mood==='right'?PRAISE : TAUNTS;
@@ -22232,6 +22234,7 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
   }
   try{
     var obs=new MutationObserver(function(muts){
+      if(!window._villainReady)return;        // never react during login/onboarding screens
       if(Date.now()-lastAt<9000)return;       // cooldown so it never spams
       for(var i=0;i<muts.length;i++){
         var m=muts[i], hit='';
