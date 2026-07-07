@@ -21791,6 +21791,10 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
   background:radial-gradient(ellipse at 78% 82%,rgba(255,40,60,.28),transparent 55%)}
 #vil-quakeflash.hit{animation:vilQuakeFlash .5s ease-out}
 @keyframes vilQuakeFlash{0%{opacity:.9}100%{opacity:0}}
+/* whole-screen red/black flash while the boss speaks (kept ~2Hz for photosensitivity) */
+#vil-strobe{position:fixed;inset:0;z-index:2499999;pointer-events:none;opacity:0;mix-blend-mode:multiply}
+#vil-strobe.talking{animation:vilStrobe .5s steps(1) infinite}
+@keyframes vilStrobe{0%,49%{background:#c0001a;opacity:.42}50%,100%{background:#000;opacity:.6}}
 #villain-overlay.show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
 #villain-overlay.leaving{opacity:0;transform:translateY(30px) scale(.92)}
 .vil-bubble{position:relative;margin:0 4px 10px;background:linear-gradient(160deg,#1a0308,#2a0410);border:1px solid #ff2a44;
@@ -21801,10 +21805,16 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
 .vil-name{display:block;font-size:.56rem;letter-spacing:3px;color:#ff4a5e;font-weight:900;margin-bottom:4px;text-shadow:0 0 8px rgba(255,0,40,.8)}
 .vil-cursor{display:inline-block;width:7px;height:.85em;background:#ff4a5e;margin-left:1px;vertical-align:-1px;animation:vilBlink .6s steps(1) infinite}
 @keyframes vilBlink{50%{opacity:0}}
-.vil-stage{position:relative;height:270px;filter:drop-shadow(0 12px 16px rgba(0,0,0,.6))}
-.vil-bot{position:absolute;left:50%;bottom:0;transform:translateX(-50%);animation:vilHover 3.4s ease-in-out infinite}
-@keyframes vilHover{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-7px)}}
-.vil-bot svg{overflow:visible}
+.vil-stage{position:relative;height:360px;filter:drop-shadow(0 12px 16px rgba(0,0,0,.6))}
+.vil-bot{position:absolute;left:50%;bottom:0;transform:translateX(-50%);animation:vilHover 3.6s ease-in-out infinite}
+@keyframes vilHover{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-6px)}}
+.vil-bot svg{overflow:visible;display:block;height:360px;width:auto}
+#villain-overlay.boss .vil-stage{height:min(72vh,600px)}
+#villain-overlay.boss .vil-bot svg{height:min(72vh,600px)}
+/* Terminator jaw drop while speaking */
+.vil-jaw{transform:translateY(0)}
+.vil-bot.speaking .vil-jaw{animation:vilJaw .17s ease-in-out infinite}
+@keyframes vilJaw{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
 /* assemble: each part flies in then locks */
 .vil-piece{opacity:0;animation:vilAssemble .5s forwards}
 #villain-overlay.show .vil-piece{opacity:1}
@@ -21834,6 +21844,7 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
 </style>
 
 <div id="vil-backdrop"></div>
+<div id="vil-strobe"></div>
 <div id="vil-quakeflash"></div>
 <div id="villain-overlay" aria-hidden="true">
   <div class="vil-bubble">
@@ -21842,72 +21853,130 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
   </div>
   <div class="vil-stage">
     <div class="vil-bot" id="vil-bot">
-      <svg width="240" height="278" viewBox="0 0 180 210">
+      <svg viewBox="0 0 200 400">
         <defs>
-          <linearGradient id="vgMetal" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#5b6472"/><stop offset=".45" stop-color="#2c323d"/><stop offset="1" stop-color="#12151b"/>
+          <linearGradient id="vgChrome" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#eef2f7"/><stop offset=".26" stop-color="#9aa6b4"/>
+            <stop offset=".5" stop-color="#586474"/><stop offset=".74" stop-color="#aab5c4"/><stop offset="1" stop-color="#333b46"/>
           </linearGradient>
           <linearGradient id="vgMetalD" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="#3a4150"/><stop offset="1" stop-color="#0e1116"/>
+            <stop offset="0" stop-color="#4a5260"/><stop offset="1" stop-color="#0c0f14"/>
           </linearGradient>
           <linearGradient id="vgRed" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stop-color="#ff5a6e"/><stop offset="1" stop-color="#b3001b"/>
           </linearGradient>
           <radialGradient id="vgEye" cx=".5" cy=".5" r=".5">
-            <stop offset="0" stop-color="#fff"/><stop offset=".35" stop-color="#ff3344"/><stop offset="1" stop-color="#4d0008"/>
+            <stop offset="0" stop-color="#fff"/><stop offset=".3" stop-color="#ff2233"/><stop offset="1" stop-color="#3d0006"/>
           </radialGradient>
-          <clipPath id="vgHead"><polygon points="52,44 128,44 138,64 128,104 116,120 64,120 52,104 42,64"/></clipPath>
+          <radialGradient id="vgCore" cx=".5" cy=".4" r=".6">
+            <stop offset="0" stop-color="#fff"/><stop offset=".3" stop-color="#ff4a5e"/><stop offset="1" stop-color="#7a0012"/>
+          </radialGradient>
         </defs>
 
-        <!-- shoulders / torso -->
+        <!-- ground shadow -->
+        <ellipse cx="100" cy="384" rx="66" ry="9" fill="#000" opacity=".45"/>
+
+        <!-- ============ LEGS + PELVIS + TORSO ============ -->
         <g class="vil-piece vp-b">
-          <polygon points="34,150 74,132 106,132 146,150 138,200 42,200" fill="url(#vgMetal)" stroke="#0a0c10" stroke-width="2"/>
-          <polygon points="34,150 74,132 78,150 40,168" fill="url(#vgMetalD)"/>
-          <polygon points="146,150 106,132 102,150 140,168" fill="url(#vgMetalD)"/>
-          <polygon points="70,150 110,150 116,182 64,182" fill="#0c0f14" stroke="#ff2a44" stroke-width="1.2"/>
-          <circle class="vil-core" cx="90" cy="166" r="9" fill="url(#vgRed)" stroke="#ff8a97" stroke-width="1.5"/>
-          <circle cx="90" cy="166" r="3.5" fill="#fff"/>
-        </g>
-        <!-- shoulder spikes -->
-        <g class="vil-piece vp-l"><polygon points="30,138 60,132 58,152 34,158" fill="url(#vgMetalD)" stroke="#0a0c10" stroke-width="1.5"/>
-          <polygon points="24,140 38,136 34,150" fill="#ff2a44" opacity=".85"/></g>
-        <g class="vil-piece vp-r"><polygon points="150,138 120,132 122,152 146,158" fill="url(#vgMetalD)" stroke="#0a0c10" stroke-width="1.5"/>
-          <polygon points="156,140 142,136 146,150" fill="#ff2a44" opacity=".85"/></g>
-
-        <!-- neck -->
-        <g class="vil-piece vp-b"><rect x="80" y="118" width="20" height="18" fill="url(#vgMetalD)" stroke="#0a0c10" stroke-width="1.5"/></g>
-
-        <!-- antennae -->
-        <g class="vil-piece vp-t">
-          <path d="M64,50 L52,24" stroke="#3a4150" stroke-width="3"/><circle cx="52" cy="22" r="4" fill="url(#vgRed)"/>
-          <path d="M116,50 L128,24" stroke="#3a4150" stroke-width="3"/><circle cx="128" cy="22" r="4" fill="url(#vgRed)"/>
-        </g>
-
-        <!-- head -->
-        <g class="vil-piece vp-t">
-          <polygon points="52,44 128,44 138,64 128,104 116,120 64,120 52,104 42,64" fill="url(#vgMetal)" stroke="#0a0c10" stroke-width="2"/>
-          <!-- brow -->
-          <polygon points="52,58 90,66 128,58 128,72 90,80 52,72" fill="#0c0f14"/>
-          <!-- angry brow ridges -->
-          <polygon points="56,60 86,70 84,78 56,70" fill="url(#vgMetalD)"/>
-          <polygon points="124,60 94,70 96,78 124,70" fill="url(#vgMetalD)"/>
-          <!-- eyes -->
-          <g clip-path="url(#vgHead)">
-            <rect class="vil-scan" x="42" y="44" width="96" height="4" fill="#ff2a44" opacity=".18"/>
+          <!-- LEFT LEG -->
+          <rect x="78" y="238" width="17" height="66" rx="8" fill="url(#vgChrome)" stroke="#0a0c10" stroke-width="1.6"/>
+          <circle cx="86" cy="306" r="10" fill="url(#vgMetalD)" stroke="#0a0c10" stroke-width="1.6"/>
+          <rect x="80" y="308" width="13" height="54" rx="6" fill="url(#vgChrome)" stroke="#0a0c10" stroke-width="1.6"/>
+          <line x1="86" y1="242" x2="86" y2="300" stroke="#dfe7f0" stroke-width="1.4" opacity=".5"/>
+          <polygon points="72,362 96,362 100,376 66,376" fill="url(#vgMetalD)" stroke="#0a0c10" stroke-width="1.6"/>
+          <!-- RIGHT LEG -->
+          <rect x="105" y="238" width="17" height="66" rx="8" fill="url(#vgChrome)" stroke="#0a0c10" stroke-width="1.6"/>
+          <circle cx="114" cy="306" r="10" fill="url(#vgMetalD)" stroke="#0a0c10" stroke-width="1.6"/>
+          <rect x="107" y="308" width="13" height="54" rx="6" fill="url(#vgChrome)" stroke="#0a0c10" stroke-width="1.6"/>
+          <line x1="114" y1="242" x2="114" y2="300" stroke="#dfe7f0" stroke-width="1.4" opacity=".5"/>
+          <polygon points="104,362 128,362 134,376 100,376" fill="url(#vgMetalD)" stroke="#0a0c10" stroke-width="1.6"/>
+          <!-- PELVIS -->
+          <polygon points="74,226 126,226 122,252 100,262 78,252" fill="url(#vgChrome)" stroke="#0a0c10" stroke-width="1.8"/>
+          <circle cx="86" cy="234" r="7" fill="url(#vgMetalD)" stroke="#0a0c10" stroke-width="1.4"/>
+          <circle cx="114" cy="234" r="7" fill="url(#vgMetalD)" stroke="#0a0c10" stroke-width="1.4"/>
+          <!-- SPINE -->
+          <rect x="95" y="150" width="10" height="80" rx="4" fill="url(#vgMetalD)" stroke="#0a0c10" stroke-width="1.2"/>
+          <g stroke="#0a0c10" stroke-width="1">
+            <line x1="94" y1="166" x2="106" y2="166"/><line x1="94" y1="180" x2="106" y2="180"/>
+            <line x1="94" y1="194" x2="106" y2="194"/><line x1="94" y1="208" x2="106" y2="208"/>
           </g>
-          <polygon class="vil-eye" points="60,74 84,80 82,90 60,88" fill="url(#vgEye)"/>
-          <polygon class="vil-eye" points="120,74 96,80 98,90 120,88" fill="url(#vgEye)"/>
-          <!-- cheek vents -->
-          <g stroke="#0a0c10" stroke-width="1.4">
-            <line x1="58" y1="98" x2="72" y2="98"/><line x1="58" y1="103" x2="72" y2="103"/>
-            <line x1="108" y1="98" x2="122" y2="98"/><line x1="108" y1="103" x2="122" y2="103"/>
+          <!-- RIBCAGE -->
+          <g fill="none" stroke="url(#vgChrome)" stroke-width="5.5" stroke-linecap="round">
+            <path d="M100,150 C74,150 60,164 60,184"/>
+            <path d="M100,164 C72,164 58,178 60,200"/>
+            <path d="M100,178 C74,180 62,194 66,214"/>
+            <path d="M100,150 C126,150 140,164 140,184"/>
+            <path d="M100,164 C128,164 142,178 140,200"/>
+            <path d="M100,178 C126,180 138,194 134,214"/>
           </g>
-          <!-- mouth grille (animates while talking) -->
-          <rect x="76" y="96" width="28" height="20" rx="2" fill="#0c0f14" stroke="#ff2a44" stroke-width="1"/>
-          <g class="vil-mouth-bar" style="transform-box:fill-box;transform-origin:center">
-            <rect x="79" y="99" width="22" height="3" fill="#ff2a44"/>
-            <rect x="79" y="104" width="22" height="3" fill="#ff5a6e"/>
-            <rect x="79" y="109" width="22" height="3" fill="#ff2a44"/>
+          <!-- clavicle yoke + shoulder sockets -->
+          <rect x="60" y="140" width="80" height="12" rx="6" fill="url(#vgChrome)" stroke="#0a0c10" stroke-width="1.8"/>
+          <!-- CHEST CORE -->
+          <circle class="vil-core" cx="100" cy="188" r="12" fill="url(#vgCore)" stroke="#ff8a97" stroke-width="1.6"/>
+          <circle cx="100" cy="188" r="4" fill="#fff"/>
+        </g>
+
+        <!-- ============ LEFT ARM ============ -->
+        <g class="vil-piece vp-l">
+          <circle cx="62" cy="146" r="10" fill="url(#vgMetalD)" stroke="#0a0c10" stroke-width="1.8"/>
+          <rect x="50" y="150" width="16" height="52" rx="8" fill="url(#vgChrome)" stroke="#0a0c10" stroke-width="1.6"/>
+          <circle cx="54" cy="204" r="8" fill="url(#vgMetalD)" stroke="#0a0c10" stroke-width="1.6"/>
+          <rect x="48" y="206" width="13" height="46" rx="6" fill="url(#vgChrome)" stroke="#0a0c10" stroke-width="1.6"/>
+          <!-- claw hand -->
+          <g stroke="#0a0c10" stroke-width="1.5" fill="url(#vgChrome)">
+            <path d="M50,252 l-4,14 l4,1 l3,-13 z"/><path d="M55,254 l-1,15 l4,0 l1,-15 z"/><path d="M60,253 l3,14 l4,-2 l-3,-13 z"/>
+          </g>
+        </g>
+
+        <!-- ============ RIGHT ARM ============ -->
+        <g class="vil-piece vp-r">
+          <circle cx="138" cy="146" r="10" fill="url(#vgMetalD)" stroke="#0a0c10" stroke-width="1.8"/>
+          <rect x="134" y="150" width="16" height="52" rx="8" fill="url(#vgChrome)" stroke="#0a0c10" stroke-width="1.6"/>
+          <circle cx="146" cy="204" r="8" fill="url(#vgMetalD)" stroke="#0a0c10" stroke-width="1.6"/>
+          <rect x="139" y="206" width="13" height="46" rx="6" fill="url(#vgChrome)" stroke="#0a0c10" stroke-width="1.6"/>
+          <g stroke="#0a0c10" stroke-width="1.5" fill="url(#vgChrome)">
+            <path d="M150,252 l4,14 l-4,1 l-3,-13 z"/><path d="M145,254 l1,15 l-4,0 l-1,-15 z"/><path d="M140,253 l-3,14 l-4,-2 l3,-13 z"/>
+          </g>
+        </g>
+
+        <!-- ============ NECK ============ -->
+        <g class="vil-piece vp-t">
+          <rect x="92" y="118" width="16" height="26" rx="3" fill="url(#vgMetalD)" stroke="#0a0c10" stroke-width="1.4"/>
+          <line x1="91" y1="126" x2="109" y2="126" stroke="#0a0c10" stroke-width="1"/>
+          <line x1="91" y1="134" x2="109" y2="134" stroke="#0a0c10" stroke-width="1"/>
+        </g>
+
+        <!-- ============ SKULL ============ -->
+        <g class="vil-piece vp-t">
+          <!-- cranium -->
+          <path d="M74,58 C74,34 126,34 126,58 C130,72 128,88 120,98 L116,110 L84,110 L80,98 C72,88 70,72 74,58 Z"
+                fill="url(#vgChrome)" stroke="#0a0c10" stroke-width="2"/>
+          <!-- cranial seam -->
+          <path d="M100,36 L100,54" stroke="#0a0c10" stroke-width="1.2"/>
+          <path d="M84,42 C92,50 108,50 116,42" fill="none" stroke="#0a0c10" stroke-width="1"/>
+          <!-- brow ridge -->
+          <path d="M78,66 L96,72 L104,72 L122,66 L122,74 L104,80 L96,80 L78,74 Z" fill="#0b0e13"/>
+          <!-- eye sockets -->
+          <ellipse cx="89" cy="74" rx="9" ry="7" fill="#08090c"/>
+          <ellipse cx="111" cy="74" rx="9" ry="7" fill="#08090c"/>
+          <!-- glowing eyes -->
+          <circle class="vil-eye" cx="89" cy="74" r="4.6" fill="url(#vgEye)"/>
+          <circle class="vil-eye" cx="111" cy="74" r="4.6" fill="url(#vgEye)"/>
+          <!-- cheekbones -->
+          <path d="M80,84 L92,90 L90,96 L80,92 Z" fill="url(#vgMetalD)"/>
+          <path d="M120,84 L108,90 L110,96 L120,92 Z" fill="url(#vgMetalD)"/>
+          <!-- nasal cavity -->
+          <polygon points="100,82 96,92 104,92" fill="#08090c"/>
+          <!-- upper teeth (fixed) -->
+          <rect x="86" y="96" width="28" height="6" fill="#0b0e13"/>
+          <g stroke="#c7d0dc" stroke-width="1.3"><line x1="90" y1="96" x2="90" y2="102"/><line x1="95" y1="96" x2="95" y2="102"/><line x1="100" y1="96" x2="100" y2="102"/><line x1="105" y1="96" x2="105" y2="102"/><line x1="110" y1="96" x2="110" y2="102"/></g>
+          <!-- lower jaw (drops + clenches while talking) -->
+          <g class="vil-jaw" style="transform-box:fill-box;transform-origin:center top">
+            <path d="M84,104 L116,104 L112,116 L100,120 L88,116 Z" fill="url(#vgChrome)" stroke="#0a0c10" stroke-width="1.6"/>
+            <g class="vil-mouth-bar" style="transform-box:fill-box;transform-origin:center top">
+              <rect x="88" y="104" width="24" height="6" fill="#0b0e13"/>
+              <g stroke="#c7d0dc" stroke-width="1.3"><line x1="92" y1="104" x2="92" y2="110"/><line x1="98" y1="104" x2="98" y2="110"/><line x1="104" y1="104" x2="104" y2="110"/><line x1="110" y1="104" x2="110" y2="110"/></g>
+            </g>
           </g>
         </g>
       </svg>
@@ -22030,6 +22099,12 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
   }
   if(window.speechSynthesis){try{window.speechSynthesis.onvoiceschanged=function(){voice=pickVoice();};}catch(e){}}
 
+  // Toggle "speaking" visuals: robot jaw/eyes + whole-screen red/black flash.
+  function setTalking(on){
+    var bot=document.getElementById('vil-bot'); if(bot)bot.classList.toggle('speaking',on);
+    var st=document.getElementById('vil-strobe'); if(st)st.classList.toggle('talking',on);
+  }
+
   // Fallback: browser TTS + live helmet bed (used only if the baked clip fails).
   function speakTTS(text){
     if(muted||!window.speechSynthesis||!window.SpeechSynthesisUtterance)return;
@@ -22039,10 +22114,9 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
       if(!voice)voice=pickVoice();
       if(voice)u.voice=voice;
       u.pitch=0.1; u.rate=0.8; u.volume=1;   // deep, slow, menacing — Kylo helmet register
-      var bot=document.getElementById('vil-bot');
-      u.onstart=function(){if(bot)bot.classList.add('speaking');helmetStart();};
-      u.onend=function(){if(bot)bot.classList.remove('speaking');helmetStop();};
-      u.onerror=function(){helmetStop();};
+      u.onstart=function(){setTalking(true);helmetStart();};
+      u.onend=function(){setTalking(false);helmetStop();};
+      u.onerror=function(){setTalking(false);helmetStop();};
       window.speechSynthesis.speak(u);
     }catch(e){}
   }
@@ -22053,13 +22127,12 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
     if(muted)return;
     try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}
     if(curAudio){try{curAudio.pause();}catch(e){}curAudio=null;}
-    var bot=document.getElementById('vil-bot');
     if(mood&&idx!=null){
       var a=new Audio('/static/villain/'+mood+'_'+idx+'.wav');
       a.volume=1; curAudio=a;
-      a.onplay=function(){if(bot)bot.classList.add('speaking');};
-      a.onended=function(){if(bot)bot.classList.remove('speaking');};
-      a.onerror=function(){if(bot)bot.classList.remove('speaking');speakTTS(text);};
+      a.onplay=function(){setTalking(true);};
+      a.onended=function(){setTalking(false);};
+      a.onerror=function(){setTalking(false);speakTTS(text);};
       var p=a.play();
       if(p&&p.catch)p.catch(function(){speakTTS(text);});   // autoplay blocked -> TTS
     }else{
@@ -22113,7 +22186,7 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
     clearTimeout(hideTimer);
     try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}
     if(curAudio){try{curAudio.pause();}catch(e){}curAudio=null;}
-    helmetStop();
+    helmetStop(); setTalking(false);
     ov.classList.add('leaving'); ov.classList.remove('show','glitch');
     if(bd)bd.classList.remove('show');
     setTimeout(function(){ov.setAttribute('aria-hidden','true');ov.classList.remove('boss');},450);
@@ -22123,7 +22196,7 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
     muted=!muted;
     var b=document.getElementById('vil-mute');
     if(b)b.innerHTML=muted?'🔇 MUTED':'🔈 VOICE';
-    if(muted){try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}if(curAudio){try{curAudio.pause();}catch(e){}curAudio=null;}helmetStop();}
+    if(muted){try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}if(curAudio){try{curAudio.pause();}catch(e){}curAudio=null;}helmetStop();setTalking(false);}
   };
 
   // Universal answer detector — pops the boss on wrong answers (taunt) and,
