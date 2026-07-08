@@ -22272,13 +22272,15 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
   try{
     var obs=new MutationObserver(function(muts){
       if(!window._villainReady)return;        // never react during login/onboarding screens
-      if(Date.now()-lastAt<9000)return;       // cooldown so it never spams
+      if(Date.now()-lastAt<20000)return;      // long cooldown so he can't spam
+      var ov=document.getElementById('villain-overlay');
+      if(ov&&ov.classList.contains('show'))return;   // don't re-trigger while he's already here
       for(var i=0;i<muts.length;i++){
         var m=muts[i], hit='';
         if(m.type==='characterData'){ hit=scanNode(m.target); }
         else{ for(var j=0;j<m.addedNodes.length&&!hit;j++){ hit=scanNode(m.addedNodes[j]); } }
         if(hit==='wrong'){ window.summonVillain(null,{mood:'wrong'}); return; }
-        if(hit==='right'){ if(Math.random()<0.5)window.summonVillain(null,{mood:'right'}); lastAt=Date.now(); return; }
+        // NOTE: correct answers no longer summon him — wrong answers only.
       }
     });
     if(document.body)obs.observe(document.body,{childList:true,subtree:true,characterData:true});
