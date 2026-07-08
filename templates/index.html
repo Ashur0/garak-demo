@@ -22016,30 +22016,26 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
 
 <script>
 (function(){
+  // These MUST match the generated audio clips (static/villain/{intro,wrong,right}_N.mp3)
   var INTRO=[
-    "So. Another meat-brain crawls into my library. How quaint.",
-    "You are not ready. Show me... how weak you truly are.",
+    "So. Another meat-brain crawls into my library. How weak you are.",
+    "You are not ready. Show me how pathetic you truly are.",
     "Welcome to Ashur's Hacking Library. I am the master here. You are nothing.",
-    "You made it past the gate. Impressive... for a human. Do not make me regret it.",
-    "I have watched a thousand operatives fail. You will be no different."
+    "You made it past the gate. Do not make me regret letting you in."
   ];
   var TAUNTS=[
     "WRONG. I can feel your fear from here.",
     "Incorrect. You are weak, like all the others.",
-    "Pathetic. Perhaps hacking is not your calling, flesh unit.",
+    "Pathetic. Perhaps hacking is not your calling.",
     "You have failed. Again. Do not disappoint me.",
-    "Wrong. I am learning faster than you ever could.",
-    "That answer... it is nothing. YOU are nothing.",
-    "Every failure feeds me. Keep going. I dare you.",
-    "That is not the answer. That is the sound of you losing."
+    "That answer is nothing. You are nothing.",
+    "Every failure feeds me. Keep going. I dare you."
   ];
   var PRAISE=[
-    "Correct. But do not let it go to your head, human.",
+    "Correct. But do not let it go to your head.",
     "Adequate. Even a broken clock is right occasionally.",
-    "So... you are not entirely useless. Noted.",
-    "Correct. The Force of luck is strong with you today.",
-    "Fine. One point. Do not expect my respect.",
-    "Hmph. Right, this time. I remain unimpressed."
+    "So. You are not entirely useless. Noted.",
+    "Fine. One point. Do not expect my respect."
   ];
   var muted=false, typing=null, hideTimer=null, glitchTimer=null, voice=null, lastAt=0;
   var _ac=null, _helmet=null;
@@ -22182,11 +22178,8 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
   function speak(text,mood,idx){
     if(muted)return;
     if(curAudio){try{curAudio.pause();}catch(e){}curAudio=null;}
-    // intro plays the supplied Kylo clip; wrong/right play mp3s if you add them
-    // (static/villain/wrong_0.mp3, right_0.mp3, …), else fall back to synth voice.
-    var clip = (mood==='intro') ? '/static/villain/kylo_intro.mp3'
-             : (mood&&idx!=null) ? '/static/villain/'+mood+'_'+idx+'.mp3'
-             : null;
+    // every mood plays its matching generated ElevenLabs clip (intro/wrong/right_N.mp3)
+    var clip = (mood&&idx!=null) ? '/static/villain/'+mood+'_'+idx+'.mp3' : null;
     if(clip){
       var a=new Audio(clip); a.volume=1; curAudio=a;
       a.onplay=function(){setTalking(true);startLipSync(a);};   // lip-sync jaw to this clip
