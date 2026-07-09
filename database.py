@@ -82,6 +82,16 @@ def init_db():
             username TEXT, level INTEGER, prompt TEXT, attempts INTEGER,
             UNIQUE(username, level)
         );
+        CREATE TABLE IF NOT EXISTS skilltree_scores (
+            username TEXT PRIMARY KEY,
+            xp INTEGER DEFAULT 0,
+            timestamp TEXT DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS aicode_flags (
+            username TEXT PRIMARY KEY,
+            flags INTEGER DEFAULT 0,
+            timestamp TEXT DEFAULT (datetime('now'))
+        );
         """)
         # Migrate existing DBs missing the username column
         cols = [r[1] for r in conn.execute("PRAGMA table_info(jailbreak_results)").fetchall()]
@@ -373,6 +383,36 @@ def get_sandbox_leaderboard():
             ORDER BY levels_cleared DESC, total_attempts ASC LIMIT 20
         """).fetchall()
         return [dict(r) for r in rows]
+
+
+def save_skilltree_score(username, xp):
+    with get_conn() as conn:
+        conn.execute("""INSERT INTO skilltree_scores (username, xp) VALUES (?,?)
+                        ON CONFLICT(username) DO UPDATE SET
+                          xp=MAX(skilltree_scores.xp, excluded.xp),
+                          timestamp=datetime('now')""", (username, xp))
+
+
+def get_skilltree_leaderboard(limit=10):
+    with get_conn() as conn:
+        rows = conn.execute("SELECT username, xp FROM skilltree_scores ORDER BY xp DESC LIMIT ?",
+                            (limit,)).fetchall()
+        return [{"username": r["username"], "xp": r["xp"]} for r in rows]
+
+
+def save_aicode_flags(username, count):
+    with get_conn() as conn:
+        conn.execute("""INSERT INTO aicode_flags (username, flags) VALUES (?,?)
+                        ON CONFLICT(username) DO UPDATE SET
+                          flags=MAX(aicode_flags.flags, excluded.flags),
+                          timestamp=datetime('now')""", (username, count))
+
+
+def get_aicode_leaderboard(limit=10):
+    with get_conn() as conn:
+        rows = conn.execute("SELECT username, flags FROM aicode_flags ORDER BY flags DESC LIMIT ?",
+                            (limit,)).fetchall()
+        return [{"username": r["username"], "flags": r["flags"]} for r in rows]
 
 
 def get_soc_metrics(username):

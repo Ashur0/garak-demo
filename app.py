@@ -12,6 +12,8 @@ from database import (init_db, save_jailbreak, save_scan_result, save_challenge_
                       save_quiz_score, get_quiz_leaderboard,
                       get_used_jb_categories, create_user, verify_user,
                       save_sandbox_solve, get_sandbox_solves, get_sandbox_leaderboard,
+                      save_skilltree_score, get_skilltree_leaderboard,
+                      save_aicode_flags, get_aicode_leaderboard,
                       get_soc_metrics)
 import atlas_data
 import sandbox
@@ -706,26 +708,14 @@ def cve_feed():
 def skilltree_score():
     data = request.json or {}
     username = str(data.get("username", "OPERATOR"))[:20]
-    xp = min(int(data.get("xp", 0)), 99999)
-    scores_file = "/tmp/st_scores.json"
-    try:
-        scores = json.load(open(scores_file)) if os.path.exists(scores_file) else {}
-    except Exception:
-        scores = {}
-    scores[username] = max(scores.get(username, 0), xp)
-    json.dump(scores, open(scores_file, "w"))
+    xp = min(max(int(data.get("xp", 0)), 0), 99999)
+    save_skilltree_score(username, xp)
     return jsonify({"ok": True})
 
 
 @app.route("/skilltree/leaderboard")
 def skilltree_leaderboard():
-    scores_file = "/tmp/st_scores.json"
-    try:
-        scores = json.load(open(scores_file)) if os.path.exists(scores_file) else {}
-    except Exception:
-        scores = {}
-    top = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:10]
-    return jsonify([{"username": k, "xp": v} for k, v in top])
+    return jsonify(get_skilltree_leaderboard())
 
 
 @app.route("/aicode/flags", methods=["POST"])
@@ -733,25 +723,13 @@ def aicode_flags():
     data = request.json or {}
     username = str(data.get("username", "OPERATOR"))[:20]
     count = min(max(int(data.get("count", 0)), 0), 5)
-    scores_file = "/tmp/aic_flags.json"
-    try:
-        scores = json.load(open(scores_file)) if os.path.exists(scores_file) else {}
-    except Exception:
-        scores = {}
-    scores[username] = max(scores.get(username, 0), count)
-    json.dump(scores, open(scores_file, "w"))
+    save_aicode_flags(username, count)
     return jsonify({"ok": True})
 
 
 @app.route("/aicode/leaderboard")
 def aicode_leaderboard():
-    scores_file = "/tmp/aic_flags.json"
-    try:
-        scores = json.load(open(scores_file)) if os.path.exists(scores_file) else {}
-    except Exception:
-        scores = {}
-    top = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:10]
-    return jsonify([{"username": k, "flags": v} for k, v in top])
+    return jsonify(get_aicode_leaderboard())
 
 
 @app.route("/ngrok/start", methods=["POST"])
