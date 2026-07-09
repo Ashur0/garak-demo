@@ -728,6 +728,32 @@ def skilltree_leaderboard():
     return jsonify([{"username": k, "xp": v} for k, v in top])
 
 
+@app.route("/aicode/flags", methods=["POST"])
+def aicode_flags():
+    data = request.json or {}
+    username = str(data.get("username", "OPERATOR"))[:20]
+    count = min(max(int(data.get("count", 0)), 0), 5)
+    scores_file = "/tmp/aic_flags.json"
+    try:
+        scores = json.load(open(scores_file)) if os.path.exists(scores_file) else {}
+    except Exception:
+        scores = {}
+    scores[username] = max(scores.get(username, 0), count)
+    json.dump(scores, open(scores_file, "w"))
+    return jsonify({"ok": True})
+
+
+@app.route("/aicode/leaderboard")
+def aicode_leaderboard():
+    scores_file = "/tmp/aic_flags.json"
+    try:
+        scores = json.load(open(scores_file)) if os.path.exists(scores_file) else {}
+    except Exception:
+        scores = {}
+    top = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:10]
+    return jsonify([{"username": k, "flags": v} for k, v in top])
+
+
 @app.route("/ngrok/start", methods=["POST"])
 def ngrok_start():
     global PUBLIC_URL
