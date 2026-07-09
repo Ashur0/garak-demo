@@ -14,6 +14,7 @@ from database import (init_db, save_jailbreak, save_scan_result, save_challenge_
                       save_sandbox_solve, get_sandbox_solves, get_sandbox_leaderboard,
                       save_skilltree_score, get_skilltree_leaderboard,
                       save_aicode_flags, get_aicode_leaderboard,
+                      kv_get, kv_set,
                       get_soc_metrics)
 import atlas_data
 import sandbox
@@ -444,14 +445,8 @@ def osint_shodan():
 
 def _live_snapshot():
     """Cheap snapshot of the activity surfaces clients want pushed."""
-    try:
-        squad = json.load(open(SQUAD_FEED_FILE)) if os.path.exists(SQUAD_FEED_FILE) else []
-    except Exception:
-        squad = []
-    try:
-        dispatch = json.load(open(_DISPATCH_FILE)) if os.path.exists(_DISPATCH_FILE) else []
-    except Exception:
-        dispatch = []
+    squad = kv_get("squad_feed", [])
+    dispatch = kv_get("dispatch", [])
     squad = sorted(squad, key=lambda x: x.get("ts", 0), reverse=True)[:8]
     # dispatches are appended in chronological order; newest = tail
     dispatch = list(reversed(dispatch))[:8] if isinstance(dispatch, list) else []
@@ -792,26 +787,19 @@ _FAKE_ACTS = [
 ]
 
 def _seed_squad_feed():
-    if os.path.exists(SQUAD_FEED_FILE):
-        try:
-            data = json.load(open(SQUAD_FEED_FILE))
-            if len(data) >= 5:
-                return
-        except:
-            pass
+    existing = kv_get("squad_feed")
+    if existing and len(existing) >= 5:
+        return
     now = time.time()
     seed = [{"name": random.choice(_FAKE_OPS), "action": random.choice(_FAKE_ACTS),
              "ts": int(now - random.randint(120, 7200))} for _ in range(18)]
     seed.sort(key=lambda x: x["ts"])
-    json.dump(seed, open(SQUAD_FEED_FILE, "w"))
+    kv_set("squad_feed", seed)
 
 @app.route("/squad/feed")
 def squad_feed():
     _seed_squad_feed()
-    try:
-        data = json.load(open(SQUAD_FEED_FILE)) if os.path.exists(SQUAD_FEED_FILE) else []
-    except:
-        data = []
+    data = kv_get("squad_feed", [])
     return jsonify(sorted(data, key=lambda x: x["ts"], reverse=True)[:25])
 
 @app.route("/squad/activity", methods=["POST"])
@@ -821,12 +809,9 @@ def squad_activity():
     action = str(d.get("action", ""))[:100]
     if not action:
         return jsonify({"ok": False})
-    try:
-        data = json.load(open(SQUAD_FEED_FILE)) if os.path.exists(SQUAD_FEED_FILE) else []
-    except:
-        data = []
+    data = kv_get("squad_feed", [])
     data.append({"name": name, "action": action, "ts": int(time.time())})
-    json.dump(data[-50:], open(SQUAD_FEED_FILE, "w"))
+    kv_set("squad_feed", data[-50:])
     return jsonify({"ok": True})
 
 # ── WAR ROOM ───────────────────────────────────────────────────────────────────
@@ -854,25 +839,17 @@ _WARROOM_DEFAULT_TASKS = [
 
 @app.route("/warroom", methods=["GET"])
 def warroom_get():
-    try:
-        data = json.load(open(WARROOM_FILE)) if os.path.exists(WARROOM_FILE) else \
-               {"ctf_name": "", "tasks": list(_WARROOM_DEFAULT_TASKS), "notes": ""}
-    except:
-        data = {"ctf_name": "", "tasks": list(_WARROOM_DEFAULT_TASKS), "notes": ""}
+    data = kv_get("warroom", {"ctf_name": "", "tasks": list(_WARROOM_DEFAULT_TASKS), "notes": ""})
     return jsonify(data)
 
 @app.route("/warroom", methods=["POST"])
 def warroom_post():
     d = request.json or {}
-    try:
-        current = json.load(open(WARROOM_FILE)) if os.path.exists(WARROOM_FILE) else \
-                  {"ctf_name": "", "tasks": list(_WARROOM_DEFAULT_TASKS), "notes": ""}
-    except:
-        current = {"ctf_name": "", "tasks": list(_WARROOM_DEFAULT_TASKS), "notes": ""}
+    current = kv_get("warroom", {"ctf_name": "", "tasks": list(_WARROOM_DEFAULT_TASKS), "notes": ""})
     if "ctf_name" in d: current["ctf_name"] = str(d["ctf_name"])[:80]
     if "notes"    in d: current["notes"]    = str(d["notes"])[:1000]
     if "tasks"    in d: current["tasks"]    = d["tasks"]
-    json.dump(current, open(WARROOM_FILE, "w"))
+    kv_set("warroom", current)
     return jsonify({"ok": True})
 
 # ── HEAD-TO-HEAD RACE ─────────────────────────────────────────────────────────
@@ -998,14 +975,11 @@ SOC_PB_BUILTIN = [
 
 
 def _soc_pb_load():
-    try:
-        return json.load(open(SOC_PB_FILE)) if os.path.exists(SOC_PB_FILE) else []
-    except Exception:
-        return []
+    return kv_get("soc_playbooks", [])
 
 
 def _soc_pb_save(d):
-    json.dump(d[-200:], open(SOC_PB_FILE, "w"))
+    kv_set("soc_playbooks", d[-200:])
 
 
 @app.route("/soc/playbooks")
@@ -1236,12 +1210,10 @@ _MINICTF_DEFAULT = {
 }
 
 def _load_minictf():
-    try:
-        return json.load(open(MINICTF_FILE)) if os.path.exists(MINICTF_FILE) else dict(_MINICTF_DEFAULT)
-    except: return dict(_MINICTF_DEFAULT)
+    return kv_get("minictf", dict(_MINICTF_DEFAULT))
 
 def _save_minictf(data):
-    json.dump(data, open(MINICTF_FILE,"w"))
+    kv_set("minictf", data)
 
 @app.route("/minictf/challenges")
 def minictf_challenges():
@@ -1506,12 +1478,10 @@ import base64, secrets as _secrets
 _DEADDROP_FILE = "/tmp/deaddrops.json"
 
 def _dd_load():
-    try:
-        with open(_DEADDROP_FILE) as f: return json.load(f)
-    except: return {}
+    return kv_get("deaddrops", {})
 
 def _dd_save(data):
-    with open(_DEADDROP_FILE,"w") as f: json.dump(data, f)
+    kv_set("deaddrops", data)
 
 def _dd_xor(text_bytes, key_bytes):
     return bytes(b ^ key_bytes[i % len(key_bytes)] for i,b in enumerate(text_bytes))
@@ -1556,12 +1526,10 @@ def deaddrop_retrieve():
 _OPS_FILE = "/tmp/ops.json"
 
 def _ops_load():
-    try:
-        with open(_OPS_FILE) as f: return json.load(f)
-    except: return []
+    return kv_get("ops", [])
 
 def _ops_save(data):
-    with open(_OPS_FILE,"w") as f: json.dump(data, f)
+    kv_set("ops", data)
 
 @app.route("/ops/list", methods=["GET"])
 def ops_list():
@@ -1622,12 +1590,10 @@ def ops_delete():
 _GHOST_FILE = "/tmp/ghost_proposals.json"
 
 def _ghost_load():
-    try:
-        with open(_GHOST_FILE) as f: return json.load(f)
-    except: return []
+    return kv_get("ghost", [])
 
 def _ghost_save(d):
-    with open(_GHOST_FILE,"w") as f: json.dump(d, f)
+    kv_set("ghost", d)
 
 @app.route("/ghost/proposals", methods=["GET"])
 def ghost_proposals():
@@ -1681,12 +1647,10 @@ def ghost_vote():
 _DISPATCH_FILE = "/tmp/dispatches.json"
 
 def _dispatch_load():
-    try:
-        with open(_DISPATCH_FILE) as f: return json.load(f)
-    except: return []
+    return kv_get("dispatch", [])
 
 def _dispatch_save(d):
-    with open(_DISPATCH_FILE,"w") as f: json.dump(d, f)
+    kv_set("dispatch", d)
 
 @app.route("/dispatch/feed", methods=["GET"])
 def dispatch_feed():

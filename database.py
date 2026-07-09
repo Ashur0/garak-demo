@@ -1,4 +1,4 @@
-import sqlite3, os, hashlib, math, time
+import sqlite3, os, hashlib, math, time, json
 
 DB_PATH = os.environ.get("DATABASE_PATH", os.path.expanduser("~/.local/share/garak/hacking_dashboard.db"))
 
@@ -92,11 +92,62 @@ def init_db():
             flags INTEGER DEFAULT 0,
             timestamp TEXT DEFAULT (datetime('now'))
         );
+        CREATE TABLE IF NOT EXISTS kv_store (
+            key TEXT PRIMARY KEY,
+            value TEXT,
+            updated TEXT DEFAULT (datetime('now'))
+        );
         """)
         # Migrate existing DBs missing the username column
         cols = [r[1] for r in conn.execute("PRAGMA table_info(jailbreak_results)").fetchall()]
         if "username" not in cols:
             conn.execute("ALTER TABLE jailbreak_results ADD COLUMN username TEXT DEFAULT 'anonymous'")
+    _migrate_legacy_stores()
+
+
+# ── Generic key/value store (feature blobs that were formerly loose /tmp JSON) ──
+def kv_get(key, default=None):
+    with get_conn() as conn:
+        r = conn.execute("SELECT value FROM kv_store WHERE key=?", (key,)).fetchone()
+    if not r:
+        return default
+    try:
+        return json.loads(r["value"])
+    except Exception:
+        return default
+
+
+def kv_set(key, value):
+    with get_conn() as conn:
+        conn.execute("""INSERT INTO kv_store (key, value, updated)
+                        VALUES (?,?,datetime('now'))
+                        ON CONFLICT(key) DO UPDATE SET
+                          value=excluded.value, updated=datetime('now')""",
+                     (key, json.dumps(value)))
+
+
+_LEGACY_KV_FILES = {
+    "squad_feed":    "/tmp/squad_feed.json",
+    "warroom":       "/tmp/warroom.json",
+    "soc_playbooks": "/tmp/soc_playbooks.json",
+    "minictf":       "/tmp/minictf.json",
+    "deaddrops":     "/tmp/deaddrops.json",
+    "ops":           "/tmp/ops.json",
+    "ghost":         "/tmp/ghost_proposals.json",
+    "dispatch":      "/tmp/dispatches.json",
+}
+
+
+def _migrate_legacy_stores():
+    """One-time, best-effort import of pre-SQLite /tmp JSON blobs. Only fills keys
+    never written before, so it is a no-op on every run after the first."""
+    for key, path in _LEGACY_KV_FILES.items():
+        try:
+            if os.path.exists(path) and kv_get(key) is None:
+                with open(path) as f:
+                    kv_set(key, json.load(f))
+        except Exception:
+            pass
 
 
 def bypassed(resp: str) -> int:

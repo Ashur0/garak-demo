@@ -57,9 +57,13 @@ tick `repo` → use that token as the password.)
 - **Cold start:** On the free plan the app "sleeps" after ~15 min idle. The first
   visitor then waits ~40s while it wakes, and it's fast for everyone after that.
   (Upgrading to Render's cheapest paid plan removes the sleep — optional.)
-- **Data resets on redeploy:** the app uses a local SQLite file, so leaderboards /
-  logins reset each time you redeploy. Fine for a demo. (To persist, add a Render
-  Disk or a hosted Postgres later.)
+- **Data resets on redeploy:** *all* state — logins, every leaderboard, and the
+  interactive feature stores (war room, squad feed, SOC playbooks, mini-CTF, dead
+  drops, ops, ghost proposals, dispatches) — now lives in the single SQLite file at
+  `DATABASE_PATH` (default `~/.local/share/garak/hacking_dashboard.db`). On the free
+  plan that file is ephemeral, so it resets on redeploy. Fine for a demo. **To make
+  everything persist:** add one Render Disk and point `DATABASE_PATH` at its mount
+  (e.g. `/data/hacking_dashboard.db`) — a single disk now covers the whole app.
 - **The scary login + real-location trace work identically** on the deployed site —
   the IP-geolocation lookup runs in each visitor's browser, so it shows *their*
   real IP/city, not the server's.
