@@ -22073,11 +22073,21 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
 <script>
 (function(){
   // These MUST match the generated audio clips (static/villain/{intro,wrong,right}_N.mp3)
+  // NOTE: line index N maps to the baked clip /static/villain/{mood}_N.mp3.
+  // Lines WITHOUT a matching mp3 fall back to the deep TTS "helmet" voice, which
+  // speaks the bubble text verbatim — so bubble and audio always match either way.
   var INTRO=[
     "So. Another meat-brain crawls into my library. How weak you are.",
     "You are not ready. Show me how pathetic you truly are.",
     "Welcome to Ashur's Hacking Library. I am the master here. You are nothing.",
-    "You made it past the gate. Do not make me regret letting you in."
+    "You made it past the gate. Do not make me regret letting you in.",
+    // 4 & 5 = real Kylo-Ren voice clips (intro_4.mp3 / intro_5.mp3) — text is the exact transcript
+    "I will finish what you started. The dark side of the Force is a pathway to many abilities some consider to be unnatural. Don't do anything I wouldn't do. Knowledge is power.",
+    "I will finish what you started. The dark side of the Force is a pathway to many abilities some consider to be unnatural.",
+    // 6+ = made-up lines (no baked clip -> deep TTS helmet voice)
+    "You dare enter my library? Good. Your weakness will only make me stronger.",
+    "I sense great fear in you. Let it consume you. Let it feed the machine.",
+    "Every keystroke you make, I already know. There is nowhere to hide from me."
   ];
   var TAUNTS=[
     "WRONG. I can feel your fear from here.",
@@ -22085,13 +22095,22 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
     "Pathetic. Perhaps hacking is not your calling.",
     "You have failed. Again. Do not disappoint me.",
     "That answer is nothing. You are nothing.",
-    "Every failure feeds me. Keep going. I dare you."
+    "Every failure feeds me. Keep going. I dare you.",
+    // 6+ = made-up (TTS)
+    "Weak. Undisciplined. The dark side would never have let that slip.",
+    "You lack focus. That is why you fail. That is why you will always fail.",
+    "I can feel the conflict in you. It makes your hands tremble and your answers wrong.",
+    "Pathetic. I have crushed stronger minds than yours, for far less."
   ];
   var PRAISE=[
     "Correct. But do not let it go to your head.",
     "Adequate. Even a broken clock is right occasionally.",
     "So. You are not entirely useless. Noted.",
-    "Fine. One point. Do not expect my respect."
+    "Fine. One point. Do not expect my respect.",
+    // 4+ = made-up (TTS)
+    "Impressive. Most impressive. But you are not a master yet.",
+    "Good. Your anger has made you sharp. Use it.",
+    "So. The apprentice learns. Do not let it soften you."
   ];
   var muted=false, typing=null, hideTimer=null, glitchTimer=null, voice=null, lastAt=0;
   var _ac=null, _helmet=null;
