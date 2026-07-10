@@ -22211,7 +22211,7 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
       var u=new SpeechSynthesisUtterance(text);
       if(!voice)voice=pickVoice();
       if(voice)u.voice=voice;
-      u.pitch=0.1; u.rate=0.8; u.volume=1;   // deep, slow, menacing — Kylo helmet register
+      u.pitch=0.1; u.rate=0.78; u.volume=1;   // deep, slow, menacing — Kylo helmet register (~2.5% slower)
       u.onstart=function(){setTalking(true);helmetStart();};
       u.onend=function(){setTalking(false);helmetStop();};
       u.onerror=function(){setTalking(false);helmetStop();};
@@ -22258,6 +22258,8 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
     var clip = (mood&&idx!=null) ? '/static/villain/'+mood+'_'+idx+'.mp3' : null;
     if(clip){
       var a=new Audio(clip); a.volume=1; curAudio=a;
+      a.playbackRate=0.975;                                     // ~2.5% slower — deeper, more menacing Kylo cadence
+      try{ a.preservesPitch=a.mozPreservesPitch=a.webkitPreservesPitch=false; }catch(e){}  // let the slowdown drop pitch too
       a.onplay=function(){setTalking(true);startLipSync(a);};   // lip-sync jaw to this clip
       a.onended=function(){setTalking(false);stopLipSync();};
       a.onerror=function(){setTalking(false);stopLipSync();speakTTS(text);};   // clip missing -> synth
