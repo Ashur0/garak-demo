@@ -22076,42 +22076,19 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
   // NOTE: line index N maps to the baked clip /static/villain/{mood}_N.mp3.
   // Lines WITHOUT a matching mp3 fall back to the deep TTS "helmet" voice, which
   // speaks the bubble text verbatim — so bubble and audio always match either way.
+  // Every line has a real Kylo-Ren voice clip: INTRO[i] -> intro_i.mp3, TAUNTS[i] -> wrong_i.mp3.
+  // No browser-TTS lines and no original pre-Kylo clips remain (speakTTS is disabled below),
+  // so the villain ONLY ever speaks in the uploaded Kylo voice.
   var INTRO=[
-    "So. Another meat-brain crawls into my library. How weak you are.",
-    "You are not ready. Show me how pathetic you truly are.",
-    "Welcome to Ashur's Hacking Library. I am the master here. You are nothing.",
-    "You made it past the gate. Do not make me regret letting you in.",
-    // 4 & 5 = real Kylo-Ren voice clips (intro_4.mp3 / intro_5.mp3) — text is the exact transcript
     "I will finish what you started. The dark side of the Force is a pathway to many abilities some consider to be unnatural. Don't do anything I wouldn't do. Knowledge is power.",
     "I will finish what you started. The dark side of the Force is a pathway to many abilities some consider to be unnatural.",
-    // 6 = real voice clip (intro_6.mp3) — text is the exact transcript
-    "Welcome, your journey starts here. Impress yourself and family.",
-    // 7-8 = made-up lines (no baked clip -> deep TTS helmet voice)
-    "I sense great fear in you. Let it consume you. Let it feed the machine.",
-    "Every keystroke you make, I already know. There is nowhere to hide from me."
+    "Welcome, your journey starts here. Impress yourself and family."
   ];
   var TAUNTS=[
-    "WRONG. I can feel your fear from here.",
-    "Incorrect. You are weak, like all the others.",
-    "Pathetic. Perhaps hacking is not your calling.",
-    "You have failed. Again. Do not disappoint me.",
-    "That answer is nothing. You are nothing.",
-    "Every failure feeds me. Keep going. I dare you.",
-    // 6-9 = real voice clips (wrong_6..9.mp3) — text is the exact transcript
     "Were it so easy.",
     "Keep trying, but try better this time.",
     "Don't give up.",
     "You always fear what you don't understand."
-  ];
-  var PRAISE=[
-    "Correct. But do not let it go to your head.",
-    "Adequate. Even a broken clock is right occasionally.",
-    "So. You are not entirely useless. Noted.",
-    "Fine. One point. Do not expect my respect.",
-    // 4+ = made-up (TTS)
-    "Impressive. Most impressive. But you are not a master yet.",
-    "Good. Your anger has made you sharp. Use it.",
-    "So. The apprentice learns. Do not let it soften you."
   ];
   var muted=false, typing=null, hideTimer=null, glitchTimer=null, voice=null, lastAt=0;
   var _ac=null, _helmet=null;
@@ -22203,8 +22180,11 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
     var st=document.getElementById('vil-strobe'); if(st)st.classList.toggle('talking',on);
   }
 
-  // Fallback: browser TTS + live helmet bed (used only if the baked clip fails).
+  // DISABLED: the villain must only ever speak in the real Kylo-Ren voice clips.
+  // If a clip fails (autoplay-blocked, offline), stay silent rather than fall back
+  // to the robotic browser voice.
   function speakTTS(text){
+    return;
     if(muted||!window.speechSynthesis||!window.SpeechSynthesisUtterance)return;
     try{
       window.speechSynthesis.cancel();
@@ -22290,7 +22270,7 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
     if(!window._villainReady)return;                  // stay hidden until login/onboarding is done
     if(localStorage.getItem('villainOff')==='1')return;
     var mood=opts.mood||(opts.intro?'intro':'wrong');
-    var pool= mood==='intro'?INTRO : mood==='right'?PRAISE : TAUNTS;
+    var pool= mood==='intro'?INTRO : TAUNTS;
     var idx=Math.floor(Math.random()*pool.length);
     var line=customText||pool[idx];
     var clipIdx=customText?null:idx;                       // baked clips exist per pool line
