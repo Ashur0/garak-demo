@@ -20,6 +20,8 @@ import atlas_data
 import sandbox
 
 app = Flask(__name__)
+# Serve template edits without a full server restart (index.html changes often).
+app.config["TEMPLATES_AUTO_RELOAD"] = True
 # Session secret: persisted to disk so logins survive restarts. Override with SECRET_KEY env.
 def _load_secret():
     env = os.environ.get("SECRET_KEY")

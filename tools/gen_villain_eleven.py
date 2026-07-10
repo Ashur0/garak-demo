@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate OVERLORD-9 villain voice lines via the ElevenLabs API.
+"""Generate KYLO REN villain voice lines via the ElevenLabs API.
 
 Usage:
   python gen_eleven.py --list           # list your voices (name + id)
