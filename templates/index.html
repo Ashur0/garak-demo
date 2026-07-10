@@ -22235,7 +22235,9 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
     if(muted)return;
     if(curAudio){try{curAudio.pause();}catch(e){}curAudio=null;}
     // every mood plays its matching generated ElevenLabs clip (intro/wrong/right_N.mp3)
-    var clip = (mood&&idx!=null) ? '/static/villain/'+mood+'_'+idx+'.mp3' : null;
+    // ?v=kylo2 busts stale browser cache: the clip filenames were reused but their
+    // contents changed to the Kylo voice, so old cached audio must be forced to refetch.
+    var clip = (mood&&idx!=null) ? '/static/villain/'+mood+'_'+idx+'.mp3?v=kylo2' : null;
     if(clip){
       var a=new Audio(clip); a.volume=1; curAudio=a;
       a.playbackRate=0.975;                                     // ~2.5% slower — deeper, more menacing Kylo cadence
