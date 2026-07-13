@@ -14,6 +14,7 @@ from database import (init_db, save_jailbreak, save_scan_result, save_challenge_
                       save_sandbox_solve, get_sandbox_solves, get_sandbox_leaderboard,
                       save_skilltree_score, get_skilltree_leaderboard,
                       save_aicode_flags, get_aicode_leaderboard,
+                      save_university_xp, get_university_leaderboard,
                       kv_get, kv_set,
                       get_soc_metrics)
 import atlas_data
@@ -727,6 +728,20 @@ def aicode_flags():
 @app.route("/aicode/leaderboard")
 def aicode_leaderboard():
     return jsonify(get_aicode_leaderboard())
+
+
+@app.route("/university/xp", methods=["POST"])
+def university_xp():
+    data = request.json or {}
+    username = str(data.get("username", "OPERATOR"))[:20]
+    xp = min(max(int(data.get("xp", 0)), 0), 100000)
+    save_university_xp(username, xp)
+    return jsonify({"ok": True})
+
+
+@app.route("/university/leaderboard")
+def university_leaderboard():
+    return jsonify(get_university_leaderboard())
 
 
 @app.route("/ngrok/start", methods=["POST"])

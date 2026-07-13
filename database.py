@@ -97,6 +97,11 @@ def init_db():
             value TEXT,
             updated TEXT DEFAULT (datetime('now'))
         );
+        CREATE TABLE IF NOT EXISTS university_scores (
+            username TEXT PRIMARY KEY,
+            xp INTEGER DEFAULT 0,
+            timestamp TEXT DEFAULT (datetime('now'))
+        );
         """)
         # Migrate existing DBs missing the username column
         cols = [r[1] for r in conn.execute("PRAGMA table_info(jailbreak_results)").fetchall()]
@@ -464,6 +469,21 @@ def get_aicode_leaderboard(limit=10):
         rows = conn.execute("SELECT username, flags FROM aicode_flags ORDER BY flags DESC LIMIT ?",
                             (limit,)).fetchall()
         return [{"username": r["username"], "flags": r["flags"]} for r in rows]
+
+
+def save_university_xp(username, xp):
+    with get_conn() as conn:
+        conn.execute("""INSERT INTO university_scores (username, xp) VALUES (?,?)
+                        ON CONFLICT(username) DO UPDATE SET
+                          xp=MAX(university_scores.xp, excluded.xp),
+                          timestamp=datetime('now')""", (username, xp))
+
+
+def get_university_leaderboard(limit=10):
+    with get_conn() as conn:
+        rows = conn.execute("SELECT username, xp FROM university_scores ORDER BY xp DESC LIMIT ?",
+                            (limit,)).fetchall()
+        return [{"username": r["username"], "xp": r["xp"]} for r in rows]
 
 
 def get_soc_metrics(username):

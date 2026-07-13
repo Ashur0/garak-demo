@@ -10553,6 +10553,8 @@ find / -perm -4000 2>/dev/null  # SUID</div>
         <div class="uni-stat-row"><span>Complete</span><b><span id="uni-count">0 / 36</span> &middot; <span id="uni-pct">0%</span></b></div>
         <div class="uni-barwrap"><div id="uni-bar"></div></div>
         <div id="uni-tree"></div>
+        <div style="font-size:.7rem;color:#00d2ff;font-weight:800;letter-spacing:.5px;margin:12px 0 5px;border-top:1px solid #21262d;padding-top:10px">🏆 TOP STUDENTS</div>
+        <div id="uni-lb" style="font-size:.74rem;color:#9aa4b2;line-height:1.7">—</div>
       </aside>
       <main class="uni-main">
         <h3 id="uni-title" style="color:#e6edf3;font-size:1rem;margin:0 0 2px">Pick a lesson</h3>
@@ -22716,32 +22718,32 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
   function ip2int(ip){return ip.split(".").reduce(function(a,o){return ((a<<8)+(+o))>>>0;},0)>>>0;}
   function scan(host){var db={"10.0.0.5":[22,80,443,3306],"iot-cam":[23,80,554],"db":[3306,5432]};var p=db[host]||[];return p.length?("open ports on "+host+": "+p.join(", ")):("host "+host+" unknown. try 10.0.0.5, iot-cam, db");}
 
-  // ---- curriculum: 8 modules, one lesson per real bootcamp topic ----
-  // each lesson: t=title, d=concept, c=starter code (works), task=challenge, ck=grader(outputText, returnValue)
+  // ---- curriculum: 8 modules, one lesson per bootcamp topic ----
+  // t=title, d=concept, c=starter, task=challenge, ck=grader(outputText,returnValue), bug=1 means the starter is broken on purpose
   var C=[
    {name:"I · Foundations", color:"#58a6ff", lessons:[
      {t:"Computer & OS internals", d:"Unix file-permission bits are three octal digits (owner/group/other), each mapping to rwx.", task:"Run it — CHECK passes when 755 decodes to rwxr-xr-x.",
       c:'function perms(oct){var m=["---","--x","-w-","-wx","r--","r-x","rw-","rwx"];return (""+oct).split("").map(function(d){return m[+d];}).join("");}\nprint("755 = "+perms(755));\nprint("640 = "+perms(640));', ck:function(o){return /rwxr-xr-x/.test(o);}},
-     {t:"Networking fundamentals", d:"An IPv4 address is a 32-bit integer. Two hosts share a /24 if their top 24 bits match.", task:"CHECK passes when the two .1.x hosts are reported same /24 (true).",
-      c:'var a=ip2int("192.168.1.10"), b=ip2int("192.168.1.200");\nprint("same /24? "+((a>>>8)===(b>>>8)));', ck:function(o){return /same \/24\? true/.test(o);}},
+     {t:"Networking fundamentals", d:"An IPv4 address is a 32-bit integer. Two hosts share a /24 if their top 24 bits match.", task:"🐞 Fix the bug: these two hosts ARE in the same /24, but it prints false. Compare only the network bits (shift right by 8).", bug:1,
+      c:'var a=ip2int("192.168.1.10"), b=ip2int("192.168.1.200");\n// BUG: comparing the whole address instead of the /24 network\nprint("same /24? "+((a>>>0)===(b>>>0)));', ck:function(o){return /same \/24\? true/.test(o);}},
      {t:"Cryptography basics", d:"A Caesar cipher shifts each letter by N. Decrypting is shifting by -N.", task:"CHECK passes when the round-trip recovers 'attack at dawn'.",
       c:'var ct=caesar("attack at dawn",3);\nprint("cipher: "+ct);\nprint("plain : "+caesar(ct,-3));', ck:function(o){return /plain : attack at dawn/.test(o);}},
-     {t:"Secure coding principles", d:"Validate input against an allow-list, never a block-list. Reject by default.", task:"CHECK passes when only the safe value is accepted.",
-      c:'var allow=["png","jpg","gif"];\nfunction ok(ext){return allow.indexOf(ext)>=0 ? "accept" : "REJECT";}\nprint("png -> "+ok("png"));\nprint("php -> "+ok("php"));', ck:function(o){return /png -> accept/.test(o) && /php -> REJECT/.test(o);}},
-     {t:"Virtualization & isolation", d:"Containers isolate processes via namespaces. Sharing the host PID namespace breaks isolation.", task:"CHECK passes when the escape-risk container is flagged.",
+     {t:"Secure coding principles", d:"Validate input against an allow-list, never a block-list. Reject by default.", task:"🐞 Fix the bug: an executable extension slipped into the allow-list. Remove it so php is REJECTed.", bug:1,
+      c:'var allow=["png","jpg","php"]; // BUG: php must not be allowed\nfunction ok(ext){return allow.indexOf(ext)>=0 ? "accept" : "REJECT";}\nprint("png -> "+ok("png"));\nprint("php -> "+ok("php"));', ck:function(o){return /png -> accept/.test(o) && /php -> REJECT/.test(o);}},
+     {t:"Virtualization & isolation", d:"Containers isolate processes via namespaces. Sharing the host PID/net namespace breaks isolation.", task:"CHECK passes when the escape-risk container is flagged.",
       c:'function audit(c){return c.hostPID||c.hostNet ? "ESCAPE RISK" : "isolated";}\nprint("app  -> "+audit({hostPID:false,hostNet:false}));\nprint("priv -> "+audit({hostPID:true}));', ck:function(o){return /priv -> ESCAPE RISK/.test(o);}}
    ]},
    {name:"II · Core Blue / Red", color:"#f0883e", lessons:[
      {t:"Web security: SQL injection", d:"Unsanitized input concatenated into SQL lets an attacker change the query's logic.", task:"CHECK passes when the OR 1=1 bypass is demonstrated.",
       c:'function build(inp){return "SELECT * FROM users WHERE user = "+inp;}\nprint("safe: "+build("alice"));\nprint("evil: "+build("alice OR 1=1"));', ck:function(o){return /OR 1=1/.test(o);}},
-     {t:"Web security: XSS", d:"Reflected user input rendered as HTML runs as script. Escape &, <, > to defang it.", task:"CHECK passes when the payload is neutralised (no raw < remains in 'safe').",
-      c:'function esc(s){return s.replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c];});}\nprint("safe: "+esc("<img src=x onerror=alert(1)>"));', ck:function(o){return /&lt;img/.test(o);}},
+     {t:"Web security: XSS", d:"Reflected user input rendered as HTML runs as script. Escape &, <, > to defang it.", task:"🐞 Fix the bug: the escaper forgets '<', so the tag still renders. Add '<' so the output contains &lt;img.", bug:1,
+      c:'// BUG: < is not escaped\nfunction esc(s){return s.replace(/[&>]/g,function(c){return {"&":"&amp;",">":"&gt;"}[c];});}\nprint("safe: "+esc("<img src=x onerror=alert(1)>"));', ck:function(o){return /&lt;img/.test(o);}},
      {t:"Web security: SSRF", d:"If you control a URL the server fetches, you can reach internal-only endpoints like cloud metadata.", task:"CHECK passes when the metadata IP is flagged internal.",
       c:'function fetchUrl(u){var bad=["169.254.169.254","127.0.0.1","10.0.0.","192.168."];for(var i=0;i<bad.length;i++)if(u.indexOf(bad[i])>=0)return "INTERNAL HIT";return "external";}\nprint("meta -> "+fetchUrl("http://169.254.169.254/latest/meta-data/"));', ck:function(o){return /meta -> INTERNAL HIT/.test(o);}},
      {t:"Web security: JWT alg=none", d:"If a server accepts alg:none, tokens need no signature and can be forged.", task:"CHECK passes when a forged admin token (ending in a dot) is produced.",
-      c:'function u(x){return b64e(JSON.stringify(x)).split("+").join("-").split("/").join("_").replace(/=+$/,"");}\nvar t=u({alg:"none"})+"."+u({admin:true})+".";\nprint(t);', ck:function(o,r){return /\.$/.test(o.trim());}},
-     {t:"Network security", d:"A firewall is default-deny: only explicitly allowed (port, proto) pairs pass.", task:"CHECK passes when 22 is allowed and 23 is dropped.",
-      c:'var allow=[[22,"tcp"],[443,"tcp"]];\nfunction fw(p,pr){return allow.some(function(r){return r[0]===p&&r[1]===pr;})?"ALLOW":"DROP";}\nprint("22 -> "+fw(22,"tcp"));\nprint("23 -> "+fw(23,"tcp"));', ck:function(o){return /22 -> ALLOW/.test(o) && /23 -> DROP/.test(o);}},
+      c:'function u(x){return b64e(JSON.stringify(x)).split("+").join("-").split("/").join("_").replace(/=+$/,"");}\nvar t=u({alg:"none"})+"."+u({admin:true})+".";\nprint(t);', ck:function(o){return /\.$/.test(o.trim());}},
+     {t:"Network security", d:"A firewall is default-deny: only explicitly allowed (port, proto) pairs pass.", task:"🐞 Fix the bug: telnet (port 23) is exposed. Remove it from the allow-list so 23 -> DROP.", bug:1,
+      c:'var allow=[[22,"tcp"],[23,"tcp"],[443,"tcp"]]; // BUG: 23/telnet must not be open\nfunction fw(p,pr){return allow.some(function(r){return r[0]===p&&r[1]===pr;})?"ALLOW":"DROP";}\nprint("22 -> "+fw(22,"tcp"));\nprint("23 -> "+fw(23,"tcp"));', ck:function(o){return /22 -> ALLOW/.test(o) && /23 -> DROP/.test(o);}},
      {t:"Identity & access mgmt", d:"Check a password against breach data without sending it: send only a hash prefix (k-anonymity).", task:"CHECK passes when only a 5-char prefix is emitted.",
       c:'function prefix(pw){return djb2(pw).slice(2,7);}\nprint("prefix sent: "+prefix("hunter2"));', ck:function(o){return /prefix sent: [0-9a-f]{5}/.test(o);}},
      {t:"Offensive security", d:"Recon first: enumerate open ports before choosing an exploit.", task:"CHECK passes when the scan finds open ports on 10.0.0.5.",
@@ -22752,8 +22754,8 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
    {name:"III · Cloud / DevSecOps", color:"#7ee787", lessons:[
      {t:"Cloud security primitives", d:"IAM policies should be least-privilege. Wildcards on Action or Resource are a red flag.", task:"CHECK passes when the wildcard policy is flagged RISK.",
       c:'function audit(p){return (p.Action==="*"||p.Resource==="*")?"RISK":"ok";}\nprint(audit({Action:"*",Resource:"*"}));', ck:function(o){return /RISK/.test(o);}},
-     {t:"Kubernetes security", d:"A privileged container or runAsUser 0 gives host-level access. Flag both.", task:"CHECK passes when the privileged pod lists 2 findings.",
-      c:'var pod={securityContext:{privileged:true,runAsUser:0}};\nvar f=[];\nif(pod.securityContext.privileged)f.push("privileged");\nif(pod.securityContext.runAsUser===0)f.push("root");\nprint("findings: "+f.length+" ("+f.join(", ")+")");', ck:function(o){return /findings: 2/.test(o);}},
+     {t:"Kubernetes security", d:"A privileged container or runAsUser 0 gives host-level access. Flag both.", task:"🐞 Fix the bug: running as root (runAsUser 0) is missed. Add that check so findings: 2.", bug:1,
+      c:'var pod={securityContext:{privileged:true,runAsUser:0}};\nvar f=[];\nif(pod.securityContext.privileged)f.push("privileged");\n// BUG: missing the runAsUser===0 (root) check\nprint("findings: "+f.length+" ("+f.join(", ")+")");', ck:function(o){return /findings: 2/.test(o);}},
      {t:"Supply-chain security", d:"Typosquatted dependencies mimic real packages. Compare against a known-good manifest.", task:"CHECK passes when the typosquat is caught.",
       c:'var real=["lodash","react","express"];\nfunction chk(p){return real.indexOf(p)>=0?"ok":"SUSPICIOUS (typosquat?)";}\nprint("lodahs -> "+chk("lodahs"));', ck:function(o){return /lodahs -> SUSPICIOUS/.test(o);}},
      {t:"CI/CD hardening", d:"Secrets must never land in a diff. Scan for key patterns before merge.", task:"CHECK passes when the AWS key is detected as a LEAK.",
@@ -22762,13 +22764,13 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
    {name:"IV · Advanced Domains", color:"#d2a8ff", lessons:[
      {t:"Mobile & IoT security", d:"IoT devices ship with default credentials. Any device still on defaults is compromised-by-design.", task:"CHECK passes when the default-cred device is flagged.",
       c:'function chk(u,p){return (u==="admin"&&p==="admin")?"DEFAULT CREDS":"ok";}\nprint("cam -> "+chk("admin","admin"));', ck:function(o){return /cam -> DEFAULT CREDS/.test(o);}},
-     {t:"Incident response & forensics", d:"Brute-force shows as repeated failures for one account. Count fails per user.", task:"CHECK passes when 'bob' is flagged as brute force.",
-      c:'var log=["fail bob","fail bob","fail bob","ok alice"];\nvar c={};log.forEach(function(l){var p=l.split(" ");if(p[0]==="fail")c[p[1]]=(c[p[1]]||0)+1;});\nObject.keys(c).forEach(function(u){print(u+": "+c[u]+(c[u]>=3?" BRUTE FORCE":""));});', ck:function(o){return /bob: 3 BRUTE FORCE/.test(o);}},
+     {t:"Incident response & forensics", d:"Brute-force shows as repeated failures for one account. Count fails per user.", task:"🐞 Fix the bug: bob failed 3 times but isn't flagged — the threshold is too high. Lower it so bob: 3 BRUTE FORCE.", bug:1,
+      c:'var log=["fail bob","fail bob","fail bob","ok alice"];\nvar c={};log.forEach(function(l){var p=l.split(" ");if(p[0]==="fail")c[p[1]]=(c[p[1]]||0)+1;});\n// BUG: threshold too high -- 3 failures is already a brute force\nObject.keys(c).forEach(function(u){print(u+": "+c[u]+(c[u]>=5?" BRUTE FORCE":""));});', ck:function(o){return /bob: 3 BRUTE FORCE/.test(o);}},
      {t:"Security operations", d:"A SOC triages by risk = severity x asset-value, working the highest score first.", task:"CHECK passes when the crown-jewel alert scores highest.",
       c:'function score(sev,val){return sev*val;}\nprint("payments db: "+score(4,5));\nprint("test box   : "+score(4,1));', ck:function(o){return /payments db: 20/.test(o);}},
      {t:"Applied cryptography", d:"XOR is symmetric: the same key encrypts and decrypts. Reusing a key across messages is fatal.", task:"CHECK passes when the round-trip recovers 'secret'.",
       c:'var ct=xor("secret","KEY");\nprint("hex: "+hexdump(ct));\nprint("dec: "+xor(ct,"KEY"));', ck:function(o){return /dec: secret/.test(o);}},
-     {t:"Malware analysis", d:"Static triage starts with `strings`: printable runs often reveal C2 URLs and commands.", task:"CHECK passes when the C2 URL is extracted.",
+     {t:"Malware analysis", d:"Static triage starts with strings: printable runs often reveal C2 URLs and commands.", task:"CHECK passes when the C2 URL is extracted.",
       c:'var blob="..@@http://evil.c2/beacon##cmd.exe%%";\nvar re=new RegExp("[a-zA-Z0-9:/._]{4,}","g"),m;\nwhile((m=re.exec(blob)))print(m[0]);', ck:function(o){return /evil\.c2\/beacon/.test(o);}}
    ]},
    {name:"V · Emerging Topics", color:"#00d2ff", lessons:[
@@ -22780,16 +22782,16 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
       c:'function isOnion(a){return a.length===62&&a.slice(-6)===".onion"&&/^[a-z2-7]+$/.test(a.slice(0,56));}\nprint("valid: "+isOnion("abcdefghij".repeat(5)+"abcdef.onion"));', ck:function(o){return /valid: true/.test(o);}}
    ]},
    {name:"VI · Leadership / GRC", color:"#e3b341", lessons:[
-     {t:"GRC frameworks", d:"Risk = likelihood x impact. It ranks work objectively so the scariest issues go first.", task:"CHECK passes when SQLi-on-payments scores CRITICAL.",
-      c:'function risk(l,i){var s=l*i;return s+" "+(s>=15?"CRITICAL":s>=8?"HIGH":s>=4?"MED":"LOW");}\nprint("SQLi/payments: "+risk(4,5));', ck:function(o){return /CRITICAL/.test(o);}},
+     {t:"GRC frameworks", d:"Risk = likelihood x impact. It ranks work objectively so the scariest issues go first.", task:"🐞 Fix the bug: a score of 20 should be CRITICAL but prints HIGH. Fix the CRITICAL threshold.", bug:1,
+      c:'// BUG: CRITICAL threshold is wrong (should be >=15)\nfunction risk(l,i){var s=l*i;return s+" "+(s>=25?"CRITICAL":s>=8?"HIGH":s>=4?"MED":"LOW");}\nprint("SQLi/payments: "+risk(4,5));', ck:function(o){return /CRITICAL/.test(o);}},
      {t:"Security architecture", d:"Defence in depth layers controls so one failure is not fatal. Count independent layers.", task:"CHECK passes when 3 defensive layers are counted.",
       c:'var layers=["WAF","authz","encryption"];\nprint("layers of defense: "+layers.length);', ck:function(o){return /layers of defense: 3/.test(o);}},
      {t:"Design reviews (STRIDE)", d:"STRIDE is the six threat categories a threat model checks: S,T,R,I,D,E.", task:"CHECK passes when all six categories are listed.",
       c:'var S=["Spoofing","Tampering","Repudiation","InfoDisclosure","DoS","EoP"];\nS.forEach(function(x){print(x);});', ck:function(o){return /Spoofing/.test(o)&&/EoP/.test(o);}}
    ]},
    {name:"VII · 8200 Techniques", color:"#ff6b6b", lessons:[
-     {t:"Cyber tradecraft (OPSEC)", d:"OPSEC is discipline: VPN, burner devices, scrubbed metadata, unique credentials. Score yourself.", task:"CHECK passes when the OPSEC score is printed as n/4.",
-      c:'var c={vpn:true,burner:false,scrubbed:false,unique:true};\nvar s=0;Object.keys(c).forEach(function(k){if(c[k])s++;});\nprint("OPSEC: "+s+"/4");', ck:function(o){return /OPSEC: \d\/4/.test(o);}},
+     {t:"Cyber tradecraft (OPSEC)", d:"OPSEC is discipline: VPN, burner devices, scrubbed metadata, unique credentials. Score yourself.", task:"🐞 Fix the bug: it always prints 4/4. Only count the checks that are true (should be 2/4).", bug:1,
+      c:'var c={vpn:true,burner:false,scrubbed:false,unique:true};\nvar s=0;\n// BUG: counts every item, not just the enabled ones\nObject.keys(c).forEach(function(k){s++;});\nprint("OPSEC: "+s+"/4");', ck:function(o){return /OPSEC: 2\/4/.test(o);}},
      {t:"Passive surveillance", d:"Traffic analysis reads metadata (who talks to whom, when, how much) without decrypting payloads.", task:"CHECK passes when the top talker is identified.",
       c:'var flows={"A->B":40,"A->C":5};\nvar top=Object.keys(flows).sort(function(a,b){return flows[b]-flows[a];})[0];\nprint("top talker: "+top);', ck:function(o){return /top talker: A->B/.test(o);}},
      {t:"Covert C2 channels", d:"Beacons add jitter (randomised intervals) so check-ins do not form a detectable fixed pattern.", task:"CHECK passes when a jittered interval near 60s is produced.",
@@ -22827,17 +22829,34 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
     var cert=document.getElementById("uni-cert");
     if(cert){ if(n>=t && t>0){ cert.style.display="block"; var nm=document.getElementById("uni-cert-name"); if(nm)nm.textContent=(typeof username==="string"&&username)?username:"OPERATOR"; } else { cert.style.display="none"; } }
   }
+  // ---- server leaderboard (top students by XP) ----
+  function postXP(){
+    var xp=nDone()*XP_PER;
+    try{
+      if(typeof username==="string" && username){
+        fetch("/university/xp",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:username,xp:xp})}).then(renderLB).catch(renderLB);
+      } else { renderLB(); }
+    }catch(e){ renderLB(); }
+  }
+  function renderLB(){
+    var box=document.getElementById("uni-lb"); if(!box)return;
+    fetch("/university/leaderboard").then(function(r){return r.json();}).then(function(d){
+      if(!d||!d.length){ box.innerHTML="<div style='color:#6e7681'>no students yet — be first</div>"; return; }
+      box.innerHTML=d.map(function(row,i){ var nm=esc(row.username); return "<div style='display:flex;justify-content:space-between;gap:6px'><span>"+(i+1)+". "+nm+"</span><b style='color:#7ee787'>"+row.xp+"</b></div>"; }).join("");
+    }).catch(function(){ box.textContent="—"; });
+  }
+
   function buildTree(){
     var tree=document.getElementById("uni-tree"); if(!tree)return; tree.innerHTML="";
     C.forEach(function(m,mi){
       var h=document.createElement("div"); h.className="uni-mod"; h.style.color=m.color;
       var mdone=m.lessons.filter(function(_,li){return done[mi+":"+li];}).length;
       h.textContent=m.name+"  ("+mdone+"/"+m.lessons.length+")";
-      h.onclick=function(){ var open=g.style.display!=="none"; g.style.display=open?"none":"block"; };
       var g=document.createElement("div"); g.className="uni-lessons"; g.style.display=(mi===cur.mi)?"block":"none";
+      h.onclick=function(){ g.style.display=(g.style.display==="none")?"block":"none"; };
       m.lessons.forEach(function(les,li){
         var b=document.createElement("div"); b.className="uni-lesson"+((mi===cur.mi&&li===cur.li)?" active":"");
-        b.innerHTML=(done[mi+":"+li]?"<span class='uni-tick'>✓</span> ":"<span class='uni-dot'>○</span> ")+esc(les.t);
+        b.innerHTML=(done[mi+":"+li]?"<span class='uni-tick'>✓</span> ":"<span class='uni-dot'>○</span> ")+(les.bug?"<span title='fix the bug'>🐞</span> ":"")+esc(les.t);
         b.onclick=function(){ loadLesson(mi,li); };
         g.appendChild(b);
       });
@@ -22853,12 +22872,11 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
     var les=C[mi]&&C[mi].lessons[li]; if(!les)return;
     cur={mi:mi,li:li};
     var set=function(id,v){var e=document.getElementById(id); if(e)e.textContent=v;};
-    set("uni-title",(done[mi+":"+li]?"✓ ":"")+les.t);
+    set("uni-title",(done[mi+":"+li]?"✓ ":"")+(les.bug?"🐞 ":"")+les.t);
     set("uni-concept",les.d); set("uni-task",les.task||"Run the code, then CHECK to complete.");
     var ta=document.getElementById("bc-code"); if(ta)ta.value=les.c;
     var o=document.getElementById("bc-out"); if(o){o.textContent="(press RUN)";o.className="bc-out";}
     var r=document.getElementById("uni-result"); if(r){r.textContent="";r.className="uni-result";}
-    les._orig=les._orig||les.c;
     syncGutter(); buildTree();
   }
   function execute(){
@@ -22883,9 +22901,9 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
     var pass=false; try{ pass=res.ok && !!les.ck(res.logs.join("\n"), res.ret); }catch(e){ pass=false; }
     if(r){
       if(pass){ r.className="uni-result pass"; r.textContent="✓ PASSED — +"+XP_PER+" XP"; }
-      else { r.className="uni-result fail"; r.textContent="✗ not yet — check the task and try again"; }
+      else { r.className="uni-result fail"; r.textContent=les.bug?"✗ still buggy — read the 🐞 hint and fix the code":"✗ not yet — check the task and try again"; }
     }
-    if(pass){ var id=cur.mi+":"+cur.li; if(!done[id]){ done[id]=1; save(); } updateStats(); loadLesson(cur.mi,cur.li); if(r){r.className="uni-result pass";r.textContent="✓ PASSED — +"+XP_PER+" XP";} }
+    if(pass){ var id=cur.mi+":"+cur.li; if(!done[id]){ done[id]=1; save(); } updateStats(); postXP(); buildTree(); loadLesson(cur.mi,cur.li); if(r){r.className="uni-result pass";r.textContent="✓ PASSED — +"+XP_PER+" XP";} }
   };
   window.uniReset=function(){
     var les=C[cur.mi].lessons[cur.li], ta=document.getElementById("bc-code");
@@ -22896,7 +22914,7 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
   window.bcInit=function(){
     var tree=document.getElementById("uni-tree"); if(!tree)return;
     done=load();
-    buildTree(); updateStats();
+    buildTree(); updateStats(); renderLB();
     if(!tree.dataset.started){ tree.dataset.started="1"; loadLesson(0,0); }
     var ta=document.getElementById("bc-code");
     if(ta && !ta.dataset.wired){
