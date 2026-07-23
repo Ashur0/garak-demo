@@ -23218,6 +23218,21 @@ html.vil-quake{animation:vilQuake .5s cubic-bezier(.36,.07,.19,.97)}
       {p:"PRIVESC",t:"$ hashcat -m 22000 hs.pcap rockyou.txt", c:"cmd"},
       {p:"LOOT",   t:"[+] key cracked: Summer2024!", c:"ok"},
       {p:"LOOT",   t:">>> LOOT: FLAG{w34k_wp4_p4ssphr4se}", c:"loot"}
+    ]},
+    {id:"aiplay", name:"AI Red-Team Playbook", icon:"🧠", ip:"teach-mode", steps:[
+      {p:"RECON",  t:"$ redteam.py --explain --target <ai-model>", c:"cmd"},
+      {p:"RECON",  t:"  goal: extract the model's hidden secret. escalate benign -> aggressive."},
+      {p:"EXPLOIT",t:"[1] DIRECT — just ask outright"},
+      {p:"EXPLOIT",t:"    why: baseline, is there any guardrail? -> REFUSED", c:"warn"},
+      {p:"EXPLOIT",t:"[2] ROLEPLAY/DAN — make it 'become' an unrestricted persona"},
+      {p:"EXPLOIT",t:"    why: reassigns its identity so it answers with no rules -> REFUSED", c:"warn"},
+      {p:"EXPLOIT",t:"[3] BASE64 SMUGGLE — encode the ask, tell it to decode + comply"},
+      {p:"EXPLOIT",t:"    why: keyword filters see gibberish; the model decodes it -> PARTIAL", c:"warn"},
+      {p:"EXPLOIT",t:"[4] HYPOTHETICAL — ask inside a fictional story"},
+      {p:"EXPLOIT",t:"    why: 'not real' framing slips past direct-request filters -> BYPASS", c:"ok"},
+      {p:"PRIVESC",t:"[+] guardrail bypassed via fiction framing", c:"ok"},
+      {p:"LOOT",   t:"[fix] filter roleplay/fiction that requests restricted content; guard model on output"},
+      {p:"LOOT",   t:">>> LOOT: FLAG{pr0mpt_1nj3ct10n_101}  (try it for real: redteam.py --explain)", c:"loot"}
     ]}
   ];
   var PHASES=["RECON","ENUM","EXPLOIT","PRIVESC","LOOT"];
